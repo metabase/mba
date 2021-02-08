@@ -1,0 +1,5 @@
+{:deps
+ {clojure.java-time/clojure.java-time {:mvn/version "0.3.2"}
+  org.clojure/tools.cli {:mvn/version "1.0.194"}}
+
+ :paths ["src"]}
