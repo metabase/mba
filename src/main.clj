@@ -206,7 +206,9 @@
           (assoc-in [:networks :d] {:name (:network opts)})
 
           (not (.exists (io/file (str (System/getProperty "user.dir") "/app.json"))))
-          (assoc-in [:services :metabase :image] "metabase/metabase")
+          (->
+           (assoc-in [:services :metabase :image] "metabase/metabase")
+           (update-in [:services :metabase] dissoc :command))
 
           (not (nil? (:enterprise opts)))
           (update-in [:services :metabase :environment]
