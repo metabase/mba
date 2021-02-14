@@ -1,0 +1,15 @@
+* requirements to make it work as a dev env
+
+** node
+  Change the webpack command to --host 0.0.0.0
+
+     "build-watch": "yarn && webpack --watch",
+  - "build-hot": "yarn && NODE_ENV=hot webpack-dev-server --progress",
+  - "build-hot": "yarn && NODE_ENV=hot webpack-dev-server --progress --host 0.0.0.0",
+    "build-stats": "yarn && webpack --json > stats.json",
+** clojure
+    lein repl :headless :port 7888
+
+** EE flags
+
+** cypress
