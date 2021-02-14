@@ -14,8 +14,8 @@
                       {:image "haproxy:2.3.4-alpine"
                        :hostname "haproxy"
                        :volumes
-                       ["$PWD/haproxy/config/:/usr/local/etc/haproxy/:ro"
-                        "$PWD/haproxy/log:/dev/log"]
+                       ["/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/haproxy/config/:/usr/local/etc/haproxy/:ro"
+                        "/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/haproxy/log:/dev/log"]
                        :networks ["d" "dp"]
                        :ports ["8080:80"]
                        :depends_on ["metabase"]
@@ -24,8 +24,8 @@
                       {:image "envoyproxy/envoy-alpine:v1.17.0"
                        :hostname "envoy"
                        :volumes
-                       ["$PWD/haproxy/config/envoy.yaml:/etc/envoy/envoy.yaml"
-                        "$PWD/envoy/logs:/var/log"]
+                       ["/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/envoy/config/envoy.yaml:/etc/envoy/envoy.yaml"
+                        "/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/envoy/logs:/var/log"]
                        :networks ["d" "dp"]
                        :ports ["8082:80"]
                        :depends_on ["metabase"]
@@ -34,7 +34,7 @@
                       {:image "nginx:1.19.6-alpine"
                        :hostname "nginx"
                        :volumes
-                       ["$PWD/nginx/nginx.conf:/etc/nginx/conf.d/default.conf"]
+                       ["/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/nginx/nginx.conf:/etc/nginx/conf.d/default.conf"]
                        :networks ["d" "dp"]
                        :ports ["8081:80"]
                        :depends_on ["metabase"]
