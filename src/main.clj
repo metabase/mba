@@ -264,6 +264,14 @@
       ($ docker-compose -f ~my-temp-file exec metabase bash))
   nil)
 
+(defmethod task :exec
+  [[_ opts]]
+  (prepare-dc opts)
+  (-> (ProcessBuilder. ["docker-compose" "-f" (.getPath my-temp-file) "exec" "metabase" "bash"])
+      (.inheritIO)
+      (.start)
+      (.waitFor)))
+
 (defmethod task :install-dep
   [[_ opts]]
   (prepare-dc opts)
