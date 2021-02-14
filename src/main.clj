@@ -10,7 +10,37 @@
    [clj-yaml.core :as yaml]
    [clojure.string :as str]))
 
-(def databases {:imagemysql57
+(def reverse-proxies {:haproxy
+                      {:image "haproxy:2.3.4-alpine"
+                       :hostname "haproxy"
+                       :volumes
+                       ["$PWD/haproxy/config/:/usr/local/etc/haproxy/:ro"
+                        "$PWD/haproxy/log:/dev/log"]
+                       :networks ["d" "dp"]
+                       :ports ["8080:80"]
+                       :depends_on ["metabase"]
+                       }
+                      :envoy
+                      {:image "envoyproxy/envoy-alpine:v1.17.0"
+                       :hostname "envoy"
+                       :volumes
+                       ["$PWD/haproxy/config/envoy.yaml:/etc/envoy/envoy.yaml"
+                        "$PWD/envoy/logs:/var/log"]
+                       :networks ["d" "dp"]
+                       :ports ["8082:80"]
+                       :depends_on ["metabase"]
+                       }
+                      :nginx
+                      {:image "nginx:1.19.6-alpine"
+                       :hostname "nginx"
+                       :volumes
+                       ["$PWD/nginx/nginx.conf:/etc/nginx/conf.d/default.conf"]
+                       :networks ["d" "dp"]
+                       :ports ["8081:80"]
+                       :depends_on ["metabase"]
+                       }})
+
+(def databases {:mysql57
                 {:image "circleci/mysql:5.7.23"
                  :user "root"
                  :volumes ["/home/rgrau/.mba/home/:/root/"]
@@ -110,10 +140,10 @@
                  :tty true
                  :networks ["d"]
                  :labels {"com.metabase.d" true}}
-  )
+                })
 
 (def docker-compose {:version "3.5"
-                     :networks {:d nil}
+                     :networks {:d {} :dp {}}
                      :services
                      {:maildev
                       {:image "maildev/maildev"
@@ -121,7 +151,9 @@
                        :ports ["80", "25"]}
 
                       :metabase
-                      {:image "clojure"
+                      {:build {:context "/home/rgrau/workspace/metabase/.devcontainer/"
+                               :dockerfile "Dockerfile"}
+
                        :working_dir "/app/source"
                        :volumes ["/home/rgrau/.mba/home/:/root/"
                                  "/home/rgrau/.mba/.m2:/root/.m2"
@@ -129,30 +161,32 @@
                                  (str (System/getProperty "user.dir") ":/app/source/")]
 
                        :environment {}
-                       :tty true
-                       :stdin_open true
+                       :tty "True"
+                       :stdin_open "True"
                        :restart "on-failure"
                        :command "tail -f /dev/null"
                        :ports ["3000:3000" "8080:8080" "7888:7888"]
-                       :networks ["d"]
+                       :networks ["d" "dp"]
                        :labels {"com.metabase.d" true}}}
                      })
 
 (def cli-options
-  [["-pp" "--port PORT" "Port number"
+  [["-E" "--enterprise" "Enterprise edition"]
+   ["-pp" "--port PORT" "Port number"
     :default 80
     :parse-fn #(Integer/parseInt %)
     :validate [#(< % 0x10000) "Must be between 0 and 65536"]]
    ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "d"]
    ["-n" "--network NETWORK" "network name" :default nil]
+   [nil "--proxy proxy-type" "use reverse proxy" :default nil]
    ["-d" "--app-db APP-DB"
     :default "h2"
     :parse-fn (comp keyword str/lower-case)
     :validate [#{:h2 :postgres :postgresql :mysql :mariadb-latest}]]
-   ["-D" "--data-db APP-DB"
-    :default "postgresql"
+   ["-D" "--data-db DATA-DB"
+    :default "postgres"
     :parse-fn (comp keyword str/lower-case)
-    :validate [#{:postgres :postgresql :mysql :mongo}]]])
+    :validate [#{:postgres :postgresql :mysql :mongo :mariadb-latest}]]])
 
 (defmulti task first)
 
@@ -176,39 +210,70 @@
   )
 
 (def all-dbs {:postgres "jdbc:postgresql://postgres:5432/rgrau?user=rgrau&password=rgrau"
-              :mariadb-latest "jdbc:mysql://mariadb-latest:3306/metabase_test?user=root"})
+              :mariadb-latest "jdbc:mysql://mariadb-latest:3306/metabase_test?user=root"
+              :mysql57 "jdbc:mysql://mysql57:3306/metabase_test?user=root"})
 
-(defmethod task :up
-  [[cmd opts]]
-  (let [app-db (keyword (:app-db opts))]
-    (-> (cond-> docker-compose
-            (not= :h2 app-db)
-          (assoc-in [:services :metabase :environment :MB_DB_CONNECTION_URI]
-                    (app-db all-dbs))
-          (not= :h2 app-db)
-          (assoc-in [:services app-db] (app-db databases))
+(defn- assemble-app-db
+  [config app-db]
+  (if (= :h2 app-db)
+    (update-in config [:services :metabase :volumes] conj (str (System/getProperty "user.dir") "/metabase.db.mv.db"))
+    (-> config
+        (assoc-in [:services :metabase :environment :MB_DB_CONNECTION_URI] (app-db all-dbs))
+        (assoc-in [:services app-db] (app-db databases)))))
+
+(defn- prepare-dc [opts]
+  (let [app-db (keyword (:app-db opts))
+        data-db (keyword (:data-db opts))
+        proxy (keyword (:proxy opts))]
+    (-> (cond-> (assemble-app-db docker-compose app-db)
+
+          (not (nil? (:data-db opts)))
+          (assoc-in [:services data-db] (data-db databases))
 
           (not (nil? (:network opts)))
-          (assoc-in [:networks :d] {:name (:network opts)}))
+          (assoc-in [:networks :d] {:name (:network opts)})
+
+          (not (.exists (io/file (str (System/getProperty "user.dir") "/app.json"))))
+          (assoc-in [:services :metabase :image] "metabase/metabase")
+
+          (not (nil? (:enterprise opts)))
+          (update-in [:services :metabase :environment]
+                     assoc
+                     :ENABLE_ENTERPRISE_EDITION "true"
+                     :HAS_ENTERPRISE_TOKEN "true"
+                     :ENTERPRISE_TOKEN  "ENV ENT_TOKEN"
+                     :MB_EDITION "ee")
+
+          (not (nil? proxy))
+          (update-in [:services] assoc proxy (proxy reverse-proxies)))
+
         docker-compose-yml
-        docker-compose-yml-file!))
-  (->
-      ($ ^{:out :inherit :err :inherit} docker-compose -f ~my-temp-file config))
+        docker-compose-yml-file!)))
+
+(defmethod task :default
+  [[cmd opts]]
+  (prepare-dc opts)
+  (-> ^{:out :inherit :err :inherit}
+      ($ docker-compose -f ~my-temp-file ~(name cmd)))
   nil)
 
-(defmethod task :down
-  [args]
-  (docker-compose-yml-file! )
+(defmethod task :shell
+  [[_ opts]]
+  (prepare-dc opts)
   (-> ^{:out :inherit :err :inherit}
-      ($ docker-compose -f ~my-temp-file down)))
+      ($ docker-compose -f ~my-temp-file exec metabase bash))
+  nil)
 
-(defmethod task :dbconsole
-  []
-  1)
+(defmethod task :install-dep
+  [[_ opts]]
+  (prepare-dc opts)
+  (-> ^{:out :inherit :err :inherit}
+      ($ docker-compose -f ~my-temp-file exec metabase apt update))
+  nil)
 
 (defmethod task :help
   [args]
-  (println "helpa!"))
+  (println "HELP ME!"))
 
 (defn -main
   "fubar"
@@ -218,6 +283,7 @@
     (when (seq errors)
       (println errors)
       (System/exit 1))
-    (task [(keyword (or cmd :help)) options])))
+    (task [(keyword (or cmd :help)) options])
+    nil))
 
 (apply -main *command-line-args*)
