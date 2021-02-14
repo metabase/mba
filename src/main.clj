@@ -276,7 +276,8 @@
 
 (defmethod task :help
   [args]
-  (println "HELP ME!"))
+  (println "HELP ME, BYZANTINE MUSICAL SYMBOL SYNAGMA META STAVROU!
+  𝀫"))
 
 ;; * CLI
 
