@@ -165,7 +165,7 @@
                        :stdin_open "True"
                        :restart "on-failure"
                        :command "tail -f /dev/null"
-                       :ports ["3000:3000" "8080:8080" "7888:7888"]
+                       :ports ["3000" "8080" "7888"]
                        :networks ["d" "dp"]
                        :labels {"com.metabase.d" true}}}
                      })
@@ -196,20 +196,25 @@
 (defn- prepare-dc [opts]
   (let [app-db (keyword (:app-db opts))
         data-db (keyword (:data-db opts))
-        proxy (keyword (:proxy opts))]
+        proxy (keyword (:proxy opts))
+        publish (:publish opts)]
     (-> (cond-> (assemble-app-db docker-compose app-db)
 
+          ;; data-db
           (not (nil? (:data-db opts)))
           (assoc-in [:services data-db] (data-db databases))
 
+          ;; network
           (not (nil? (:network opts)))
           (assoc-in [:networks :d] {:name (:network opts)})
 
+          ;; dev / release
           (not (.exists (io/file (str (System/getProperty "user.dir") "/app.json"))))
           (->
            (assoc-in [:services :metabase :image] "metabase/metabase")
            (update-in [:services :metabase] dissoc :command))
 
+          ;; CE / EE
           (not (nil? (:enterprise opts)))
           (update-in [:services :metabase :environment]
                      assoc
@@ -218,8 +223,14 @@
                      :ENTERPRISE_TOKEN  "ENV ENT_TOKEN"
                      :MB_EDITION "ee")
 
-          (not (nil? proxy))
-          (update-in [:services] assoc proxy (proxy reverse-proxies)))
+          ;; proxy?
+          proxy
+          (update-in [:services] assoc proxy (proxy reverse-proxies))
+
+          publish
+          (assoc-in [:services :metabase :ports]
+                    ["3000:3000" "8080:8080" "7888:7888"])
+          )
 
         docker-compose-yml
         docker-compose-yml-file!)))
@@ -265,7 +276,10 @@
 (defmethod task :dbconsole
   [[_ opts]]
   (prepare-dc opts)
-  (exec-into "postgres" "psql" "-U" "rgrau"))
+  (let [app-db (:app-db opts)
+        db-console-cli {:postgres ["postgres" "psql" "-U" "rgrau"]
+                        :mariadb-latest ["mysql" "--user=root" "--database=metabase_test"]}]
+    (apply exec-into (name app-db) (app-db db-console-cli))))
 
 (defmethod task :install-dep
   [[_ opts]]
@@ -282,11 +296,18 @@
 ;; * CLI
 
 (def cli-options
+  "https://github.com/clojure/tools.cli#example-usage"
   [["-E" "--enterprise" "Enterprise edition"]
-   ["-pp" "--port PORT" "Port number"
-    :default 80
-    :parse-fn #(Integer/parseInt %)
-    :validate [#(< % 0x10000) "Must be between 0 and 65536"]]
+   ["-P" "--publish" "publish ports"]
+   ;; ["-pp" "--port PORT" "Port number"
+   ;;  :multi true
+   ;;  :default ["3000" "8080" "7888"]
+   ;;  ;:validate [#(re-find #"\d+:\d+")]   ;
+   ;;  :update-fn conj;; (fn [acc x]
+   ;;             ;;   (conj
+   ;;             ;;    (remove #{(second (re-find #"^(\d+):\d+$" x))} acc)
+   ;;             ;;    x))
+   ;;  ]
    ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "d"]
    ["-n" "--network NETWORK" "network name" :default nil]
    [nil "--proxy proxy-type" "use reverse proxy" :default nil]
