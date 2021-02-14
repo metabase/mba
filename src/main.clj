@@ -170,48 +170,20 @@
                        :labels {"com.metabase.d" true}}}
                      })
 
-(def cli-options
-  [["-E" "--enterprise" "Enterprise edition"]
-   ["-pp" "--port PORT" "Port number"
-    :default 80
-    :parse-fn #(Integer/parseInt %)
-    :validate [#(< % 0x10000) "Must be between 0 and 65536"]]
-   ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "d"]
-   ["-n" "--network NETWORK" "network name" :default nil]
-   [nil "--proxy proxy-type" "use reverse proxy" :default nil]
-   ["-d" "--app-db APP-DB"
-    :default "h2"
-    :parse-fn (comp keyword str/lower-case)
-    :validate [#{:h2 :postgres :postgresql :mysql :mariadb-latest}]]
-   ["-D" "--data-db DATA-DB"
-    :default "postgres"
-    :parse-fn (comp keyword str/lower-case)
-    :validate [#{:postgres :postgresql :mysql :mongo :mariadb-latest}]]])
-
-(defmulti task first)
-
-(def my-temp-file (java.io.File/createTempFile "docker-compose-d-" ".yml"))
-
-(defn massage-format [dc]
-  ;; (map #(dissoc dc [ % :x-extra]) dc)
-  dc
-  )
-
-(defn docker-compose-yml [docker-compose]
-  (yaml/generate-string (massage-format docker-compose) :dumper-options {:flow-style :block}))
-
-(defn docker-compose-yml-file!
-  [docker-compose-yml]
-  (spit my-temp-file docker-compose-yml)
-  ;; (with-open [file (clojure.java.io/writer my-temp-file)]
-  ;;  (binding [*out* file]
-  ;;    (println
-  ;;     (yaml/generate-string docker-compose :dumper-options {:flow-style :block}))))
-  )
-
 (def all-dbs {:postgres "jdbc:postgresql://postgres:5432/rgrau?user=rgrau&password=rgrau"
               :mariadb-latest "jdbc:mysql://mariadb-latest:3306/metabase_test?user=root"
               :mysql57 "jdbc:mysql://mysql57:3306/metabase_test?user=root"})
+
+;; * docker-compose
+
+(def my-temp-file (java.io.File/createTempFile "docker-compose-d-" ".yml"))
+
+(defn docker-compose-yml [docker-compose]
+  (yaml/generate-string docker-compose :dumper-options {:flow-style :block}))
+
+(defn docker-compose-yml-file! [docker-compose-yml]
+  (spit my-temp-file docker-compose-yml))
+
 
 (defn- assemble-app-db
   [config app-db]
@@ -250,6 +222,10 @@
         docker-compose-yml
         docker-compose-yml-file!)))
 
+;;; * Tasks
+
+(defmulti task first)
+
 (defmethod task :default
   [[cmd opts]]
   (prepare-dc opts)
@@ -257,20 +233,37 @@
       ($ docker-compose -f ~my-temp-file ~(name cmd)))
   nil)
 
-(defmethod task :shell
-  [[_ opts]]
-  (prepare-dc opts)
-  (-> ^{:out :inherit :err :inherit}
-      ($ docker-compose -f ~my-temp-file exec metabase bash))
-  nil)
+(defmacro with-filter
+  "Still not useful now, but it will be.
+  https://redhatnordicssa.github.io/shell-scripting-using-clojure-and-babashka"
+  [command & forms]
+  `(let [sh#  (or (System/getenv "SHELL") "sh")
+         pb#  (doto (ProcessBuilder. [sh# "-c" ~command])
+                (.redirectError
+                 (ProcessBuilder$Redirect/to (io/file "/dev/tty"))))
+         p#   (.start pb#)
+         in#  (io/reader (.getInputStream p#))
+         out# (io/writer (.getOutputStream p#))]
+     (binding [*out* out#]
+       (try ~@forms (.close out#) (catch Exception e#)))
+     (take-while identity (repeatedly #(.readLine in#)))))
 
-(defmethod task :exec
-  [[_ opts]]
-  (prepare-dc opts)
-  (-> (ProcessBuilder. ["docker-compose" "-f" (.getPath my-temp-file) "exec" "metabase" "bash"])
+(defn- exec-into
+  [container & cmds]
+  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "exec" ~container ~@cmds])
       (.inheritIO)
       (.start)
       (.waitFor)))
+
+(defmethod task :shell
+  [[_ opts]]
+  (prepare-dc opts)
+  (exec-into "metabase" "bash"))
+
+(defmethod task :dbconsole
+  [[_ opts]]
+  (prepare-dc opts)
+  (exec-into "postgres" "psql" "-U" "rgrau"))
 
 (defmethod task :install-dep
   [[_ opts]]
@@ -282,6 +275,26 @@
 (defmethod task :help
   [args]
   (println "HELP ME!"))
+
+;; * CLI
+
+(def cli-options
+  [["-E" "--enterprise" "Enterprise edition"]
+   ["-pp" "--port PORT" "Port number"
+    :default 80
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< % 0x10000) "Must be between 0 and 65536"]]
+   ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "d"]
+   ["-n" "--network NETWORK" "network name" :default nil]
+   [nil "--proxy proxy-type" "use reverse proxy" :default nil]
+   ["-d" "--app-db APP-DB"
+    :default "h2"
+    :parse-fn (comp keyword str/lower-case)
+    :validate [#{:h2 :postgres :postgresql :mysql :mariadb-latest}]]
+   ["-D" "--data-db DATA-DB"
+    :default "postgres"
+    :parse-fn (comp keyword str/lower-case)
+    :validate [#{:postgres :postgresql :mysql :mongo :mariadb-latest}]]])
 
 (defn -main
   "fubar"
