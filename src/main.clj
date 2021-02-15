@@ -27,7 +27,7 @@
                        ["/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/envoy/config/envoy.yaml:/etc/envoy/envoy.yaml"
                         "/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/envoy/logs:/var/log"]
                        :networks ["d" "dp"]
-                       :ports ["8082:80"]
+                       :ports ["8080:80"]
                        :depends_on ["metabase"]
                        }
                       :nginx
@@ -36,7 +36,7 @@
                        :volumes
                        ["/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/nginx/nginx.conf:/etc/nginx/conf.d/default.conf"]
                        :networks ["d" "dp"]
-                       :ports ["8081:80"]
+                       :ports ["8080:80"]
                        :depends_on ["metabase"]
                        }})
 
@@ -229,8 +229,7 @@
 
           publish
           (assoc-in [:services :metabase :ports]
-                    ["3000:3000" "8080:8080" "7888:7888"])
-          )
+                    ["3000:3000" "8080:8080" "7888:7888"]))
 
         docker-compose-yml
         docker-compose-yml-file!)))
@@ -310,7 +309,10 @@
    ;;  ]
    ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "d"]
    ["-n" "--network NETWORK" "network name" :default nil]
-   [nil "--proxy proxy-type" "use reverse proxy" :default nil]
+   [nil "--proxy proxy-type" "use reverse proxy"
+    :default nil
+    :parse-fn (comp keyword str/lower-case)
+    :validate [#{:nginx :envoy :haproxy}]]
    ["-d" "--app-db APP-DB"
     :default "h2"
     :parse-fn (comp keyword str/lower-case)
@@ -318,7 +320,7 @@
    ["-D" "--data-db DATA-DB"
     :default "postgres"
     :parse-fn (comp keyword str/lower-case)
-    :validate [#{:postgres :postgresql :mysql :mongo :mariadb-latest}]]])
+    :validate [#{:postgres :postgresql :mysql :mongo :mariadb-latest :vertica} ]]])
 
 (defn -main
   "fubar"
