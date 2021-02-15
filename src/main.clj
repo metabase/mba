@@ -318,7 +318,7 @@
     :parse-fn (comp keyword str/lower-case)
     :validate [#{:h2 :postgres :postgresql :mysql :mariadb-latest}]]
    ["-D" "--data-db DATA-DB"
-    :default "postgres"
+    :default nil
     :parse-fn (comp keyword str/lower-case)
     :validate [#{:postgres :postgresql :mysql :mongo :mariadb-latest :vertica} ]]])
 
