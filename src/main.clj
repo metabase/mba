@@ -288,9 +288,26 @@
   nil)
 
 (defmethod task :help
-  [args]
-  (println "HELP ME, BYZANTINE MUSICAL SYMBOL SYNAGMA META STAVROU!
-  𝀫"))
+  [summary]
+  ;; (println "HELP ME, BYZANTINE MUSICAL SYMBOL SYNAGMA META STAVROU! 𝀫")
+  (println "            MetaBaseAssembler: ")
+  (println "")
+  (println "              *          * ")
+  (println "              *          * ")
+  (println "              *   ##     * ")
+  (println "              *  ##      * ")
+  (println "              *          * ")
+  (println "              *          * ")
+  (println "              *          * ")
+  (println "              *          * ")
+  (println "              *          * ")
+  (println "              *         #* ")
+  (println "  Next:       *         #* ")
+  (println "              *   # ##  #* ")
+  (println "   ##         *  #####  #* ")
+  (println "   ##         ************ ")
+  (println "")
+  (println (second summary)))
 
 ;; * CLI
 
@@ -327,6 +344,9 @@
   [& args]
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options)
         [cmd & rest] arguments]
+    (when (= cmd "help")
+      (task [:help summary])
+      (System/exit 0))
     (when (seq errors)
       (println errors)
       (System/exit 1))
