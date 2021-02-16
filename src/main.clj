@@ -10,6 +10,7 @@
    [clj-yaml.core :as yaml]
    [clojure.string :as str]))
 
+;; * data
 (def reverse-proxies {:haproxy
                       {:image "haproxy:2.3.4-alpine"
                        :hostname "haproxy"
@@ -214,7 +215,9 @@
           ;; dev / release
           (not (.exists (io/file (str (System/getProperty "user.dir") "/app.json"))))
           (->
-           (assoc-in [:services :metabase :image] "metabase/metabase")
+           (assoc-in [:services :metabase :image]
+                     (str "metabase/metabase"
+                          (and (:enterprise opts) "-enterprise"))) ; not very cool entanglement
            (update-in [:services :metabase] dissoc :command))
 
           ;; CE / EE
