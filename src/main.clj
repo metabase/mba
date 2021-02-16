@@ -65,7 +65,8 @@
                  :environment
                  {:MYSQL_DATABASE "metabase_test"
                   :MYSQL_USER "root"
-                  :MYSQL_ALLOW_EMPTY_PASSWORD "yes"}
+                  :MYSQL_ALLOW_EMPTY_PASSWORD "yes"
+                  :MBA_CLI "mysql --user=root --database=metabase_test"}
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -124,7 +125,8 @@
                   :POSTGRES_PASSWORD "metapass"
                   :POSTGRES_DB "metabase"
                   :POSTGRES_MULTIPLE_DATABASES "metabase,metabase_test,harbormaster_dev,harbormaster_test"
-                  :POSTGRES_HOST_AUTH_METHOD "trust"}
+                  :POSTGRES_HOST_AUTH_METHOD "trust"
+                  :MB_CLI "psql -U metauser -d metabase"}
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -262,7 +264,7 @@
 
 (defn- exec-into
   [container & cmds]
-  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "exec" ~container ~@cmds])
+  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "exec" ~container "sh" "-l" "-i" "-c" ~@cmds])
       (.inheritIO)
       (.start)
       (.waitFor)))
@@ -273,12 +275,12 @@
   (exec-into "metabase" "bash"))
 
 (defmethod task :dbconsole
+  ;; EACH possible container should add an env var MBA_CLI that will
+  ;; be ran by this command to open a shell.
   [[_ opts]]
   (prepare-dc opts)
-  (let [app-db (:app-db opts)
-        db-console-cli {:postgres ["psql" "-U" "metauser" "-d" "metabase"]
-                        :mariadb-latest ["mysql" "--user=root" "--database=metabase_test"]}]
-    (apply exec-into (name app-db) (app-db db-console-cli))))
+  (let [app-db (:app-db opts)]
+    (exec-into (name app-db) "sh" "-l" "-i" "-c" "$MBA_CLI")))
 
 (defmethod task :install-dep
   [[_ opts]]
