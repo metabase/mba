@@ -150,7 +150,8 @@
                      {:maildev
                       {:image "maildev/maildev"
                        ;; :ports ["1080:80", "1025:25"]
-                       :ports ["80", "25"]}
+                       :ports ["80", "25"]
+                       :labels {"com.metabase.d" true}}
 
                       :metabase
                       {:build {:context "/home/rgrau/workspace/metabase/.devcontainer/"
