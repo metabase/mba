@@ -37,8 +37,7 @@
                        ["/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/nginx/nginx.conf:/etc/nginx/conf.d/default.conf"]
                        :networks ["d" "dp"]
                        :ports ["8080:80"]
-                       :depends_on ["metabase"]
-                       }})
+                       :depends_on ["metabase"]}})
 
 (def databases {:mysql57
                 {:image "circleci/mysql:5.7.23"
@@ -118,11 +117,13 @@
                 :postgres
                 {:image "postgres:12"
                  :user "root"
-                 :volumes ["/home/rgrau/.mba/home/:/root/"]
+                 :volumes ["/home/rgrau/.mba/home/:/root/"
+                           "/home/rgrau/workspace/mba/resources/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/"]
                  :environment
-                 {:POSTGRES_USER "rgrau"
-                  :POSTGRES_PASSWORD "rgrau"
-                  :POSTGRES_DB "rgrau"
+                 {:POSTGRES_USER "metauser"
+                  :POSTGRES_PASSWORD "metapass"
+                  :POSTGRES_DB "metabase"
+                  :POSTGRES_MULTIPLE_DATABASES "metabase,metabase_test,harbormaster_dev,harbormaster_test"
                   :POSTGRES_HOST_AUTH_METHOD "trust"}
                  :restart "on-failure"
                  :stdin_open true
@@ -139,8 +140,7 @@
                  :stdin_open true
                  :tty true
                  :networks ["d"]
-                 :labels {"com.metabase.d" true}}
-                })
+                 :labels {"com.metabase.d" true}}})
 
 (def docker-compose {:version "3.5"
                      :networks {:d {} :dp {}}
@@ -156,7 +156,7 @@
 
                        :working_dir "/app/source"
                        :volumes ["/home/rgrau/.mba/home/:/root/"
-                                 "/home/rgrau/.mba/.m2:/root/.m2"
+                                 "/home/rgrau/.mba/.m2/:/root/.m2"
                                  "/home/rgrau/.mba/node_modules/:/root/node_modules/"
                                  (str (System/getProperty "user.dir") ":/app/source/")]
 
@@ -170,7 +170,7 @@
                        :labels {"com.metabase.d" true}}}
                      })
 
-(def all-dbs {:postgres "jdbc:postgresql://postgres:5432/rgrau?user=rgrau&password=rgrau"
+(def all-dbs {:postgres "jdbc:postgresql://postgres:5432/metabase?user=metauser&password=metapass"
               :mariadb-latest "jdbc:mysql://mariadb-latest:3306/metabase_test?user=root"
               :mysql57 "jdbc:mysql://mysql57:3306/metabase_test?user=root"})
 
@@ -276,7 +276,7 @@
   [[_ opts]]
   (prepare-dc opts)
   (let [app-db (:app-db opts)
-        db-console-cli {:postgres ["postgres" "psql" "-U" "rgrau"]
+        db-console-cli {:postgres ["psql" "-U" "metauser" "-d" "metabase"]
                         :mariadb-latest ["mysql" "--user=root" "--database=metabase_test"]}]
     (apply exec-into (name app-db) (app-db db-console-cli))))
 
