@@ -273,6 +273,18 @@
       (.start)
       (.waitFor)))
 
+(defn- exec-to
+  [container & cmds]
+  (-> (ProcessBuilder. `["sh" "-l" "-i" "-c" "env"])
+      (.inheritIO)
+      (.start)
+      (.waitFor)))
+
+(defmethod task :exec-to
+  [[_ opts]]
+  (prepare-dc opts)
+  (exec-to "metabase" "bash"))
+
 (defmethod task :shell
   [[_ opts]]
   (prepare-dc opts)
@@ -323,6 +335,7 @@
     (println "  " n2 "      ************ ")
     (println "")
     (println (second summary))))
+
 ;; * CLI
 
 (def cli-options
