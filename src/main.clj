@@ -296,8 +296,8 @@
 
 (defmethod task :help
   [summary]
-  (let [next-piece [["##  " " ## " " ## " "####" " #  "]
-                    [" ## " " ## " "##  " "    " "### "]]
+  (let [next-piece [["##  " " ## " " ## " "####" " #  " "####" "####"]
+                    [" ## " " ## " "##  " "    " "### " "#   " "   #"]]
         p1 (rand-int (count (first next-piece)))
         r1 (get (first next-piece) p1)
         r2 (get (second next-piece) p1)
