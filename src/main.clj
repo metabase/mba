@@ -293,28 +293,36 @@
       ($ docker-compose -f ~my-temp-file exec metabase apt update))
   nil)
 
+
 (defmethod task :help
   [summary]
-  ;; (println "HELP ME, BYZANTINE MUSICAL SYMBOL SYNAGMA META STAVROU! 𝀫")
-  (println "            MetaBaseAssembler: ")
-  (println "")
-  (println "              *          * ")
-  (println "              *          * ")
-  (println "              *   ##     * ")
-  (println "              *  ##      * ")
-  (println "              *          * ")
-  (println "              *          * ")
-  (println "              *          * ")
-  (println "              *          * ")
-  (println "              *          * ")
-  (println "              *         #* ")
-  (println "  Next:       *         #* ")
-  (println "              *   # ##  #* ")
-  (println "   ##         *  #####  #* ")
-  (println "   ##         ************ ")
-  (println "")
-  (println (second summary)))
-
+  (let [next-piece [["##  " " ## " " ## " "####" " #  "]
+                    [" ## " " ## " "##  " "    " "### "]]
+        p1 (rand-int (count (first next-piece)))
+        r1 (get (first next-piece) p1)
+        r2 (get (second next-piece) p1)
+        p2 (rand-int (count (first next-piece)))
+        n1 (get (first next-piece) p2)
+        n2 (get (second next-piece) p2)]
+    ;; (println "HELP ME, BYZANTINE MUSICAL SYMBOL SYNAGMA META STAVROU! 𝀫")
+    (println "            MetaBaseAssembler: ")
+    (println "")
+    (println "              *          * ")
+    (println "              *          * ")
+    (println "              *  " r1 "  * ")
+    (println "              *  " r2 "  * ")
+    (println "              *          * ")
+    (println "              *          * ")
+    (println "              *          * ")
+    (println "              *          * ")
+    (println "              *          * ")
+    (println "              *         #* ")
+    (println "  Next:       *         #* ")
+    (println "              *   # ##  #* ")
+    (println "  " n1 "      *  #####  #* ")
+    (println "  " n2 "      ************ ")
+    (println "")
+    (println (second summary))))
 ;; * CLI
 
 (def cli-options
