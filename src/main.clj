@@ -245,10 +245,12 @@
 (defmulti task first)
 
 (defmethod task :default
-  [[cmd opts]]
+  [[cmd opts args]]
   (prepare-dc opts)
-  (-> ^{:out :inherit :err :inherit}
-      ($ docker-compose -f ~my-temp-file ~(name cmd)))
+  (process `["docker-compose" "-f" ~(.getPath my-temp-file) ~@args]
+           {:out :inherit :err :inherit})
+  ;; (-> ^{:out :inherit :err :inherit}
+  ;;     ($ docker-compose -f ~my-temp-file ~(name cmd)))
   nil)
 
 (defmacro with-filter
@@ -288,7 +290,7 @@
 (defmethod task :shell
   [[_ opts]]
   (prepare-dc opts)
-  (exec-into "metabase" "bash"))
+  (exec-into "metabase" "sh" "-l" "-c" "-i" "bash"))
 
 (defmethod task :dbconsole
   ;; EACH possible container should add an env var MBA_CLI that will
@@ -353,6 +355,11 @@
    ;;  ]
    ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "d"]
    ["-n" "--network NETWORK" "network name" :default nil]
+   ["-t" "--tag TAG" "metabase/metabase:v0.37.9  or path-to-source"
+    :default nil
+    :validate [#(or (.exists (clojure.java.io/file %))
+                    (re-find #"\w+/\w+:?.*" %))]
+    ]
    [nil "--proxy proxy-type" "use reverse proxy"
     :default nil
     :parse-fn (comp keyword str/lower-case)
@@ -377,7 +384,7 @@
     (when (seq errors)
       (println errors)
       (System/exit 1))
-    (task [(keyword (or cmd :help)) options])
+    (task [(keyword (or cmd :help)) options arguments])
     nil))
 
 (apply -main *command-line-args*)
