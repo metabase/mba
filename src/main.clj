@@ -127,8 +127,10 @@
                   :POSTGRES_DB "metabase"
                   :POSTGRES_MULTIPLE_DATABASES "metabase,metabase_test,harbormaster_dev,harbormaster_test"
                   :POSTGRES_HOST_AUTH_METHOD "trust"
-                  :MB_CLI "psql -U metauser -d metabase"}
-                 :restart "on-failure"
+                  :MBA_CLI "psql -U metauser -d metabase"
+                  :MBA_SEED "psql -U metauser -d metabase -f /root/seed_clean.sql >/dev/null"
+                  :MBA_DUMP "pg_dump -U metauser metabase --clean >/root/seed_clean.sql"}
+                :restart "on-failure"
                  :stdin_open true
                  :tty true
                  :networks ["d"]
@@ -143,10 +145,21 @@
                  :stdin_open true
                  :tty true
                  :networks ["d"]
-                 :labels {"com.metabase.d" true}}})
+                 :labels {"com.metabase.d" true}}
+
+                :h2
+                {:image "oscarfonts/h2"
+                 :ports ["1521" "81"]
+                 :volumes ["h2vol:/opt/h2-data/"]
+                 :environment
+                 {:MBA_CLI "bash"}
+                 }
+
+                })
 
 (def docker-compose {:version "3.5"
                      :networks {:d {} :dp {}}
+                     :volumes { :h2vol {}}
                      :services
                      {:maildev
                       {:image "maildev/maildev"
@@ -162,9 +175,14 @@
                        :volumes ["/home/rgrau/.mba/home/:/root/"
                                  "/home/rgrau/.mba/.m2/:/root/.m2"
                                  "/home/rgrau/.mba/node_modules/:/root/node_modules/"
-                                 (str (System/getProperty "user.dir") ":/app/source/")]
+                                 (str (System/getProperty "user.dir") ":/app/source/")
+                                 "h2vol:/app/source/metabase-h2-db/"
+]
 
-                       :environment {}
+                       :environment
+                       {:MBA_CLI "lein run h2"
+                        :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"
+                        }
                        :tty "True"
                        :stdin_open "True"
                        :restart "on-failure"
@@ -191,11 +209,9 @@
 
 (defn- assemble-app-db
   [config app-db]
-  (if (= :h2 app-db)
-    (update-in config [:services :metabase :volumes] conj (str (System/getProperty "user.dir") "/metabase.db.mv.db"))
-    (-> config
-        (assoc-in [:services :metabase :environment :MB_DB_CONNECTION_URI] (app-db all-dbs))
-        (assoc-in [:services app-db] (app-db databases)))))
+  (-> config
+      (assoc-in [:services :metabase :environment :MB_DB_CONNECTION_URI] (app-db all-dbs))
+      (assoc-in [:services app-db] (app-db databases))))
 
 (defn- prepare-dc [opts]
   (let [app-db (keyword (:app-db opts))
@@ -275,7 +291,9 @@
       (.start)
       (.waitFor)))
 
+
 (defn- exec-to
+  ;; try with $ foo=hola mba exec-to echo foo
   [container & cmds]
   (-> (ProcessBuilder. `["sh" "-l" "-i" "-c" "env"])
       (.inheritIO)
@@ -297,8 +315,8 @@
   ;; be ran by this command to open a shell.
   [[_ opts]]
   (prepare-dc opts)
-  (let [app-db (:app-db opts)]
-    (exec-into (name app-db) "sh" "-l" "-i" "-c" "$MBA_CLI")))
+  (let [app-db (name (:app-db opts))]
+    (exec-into app-db "sh" "-l" "-i" "-c" "$MBA_CLI")))
 
 (defmethod task :install-dep
   [[_ opts]]
@@ -343,6 +361,7 @@
 (def cli-options
   "https://github.com/clojure/tools.cli#example-usage"
   [["-E" "--enterprise" "Enterprise edition"]
+   ["-h" "--help" "HALP!"]
    ["-P" "--publish" "publish ports"]
    ;; ["-pp" "--port PORT" "Port number"
    ;;  :multi true
@@ -378,7 +397,8 @@
   [& args]
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options)
         [cmd & rest] arguments]
-    (when (= cmd "help")
+    (when (or (= cmd "help")
+              (:help options))
       (task [:help summary])
       (System/exit 0))
     (when (seq errors)
