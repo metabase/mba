@@ -173,12 +173,8 @@
 
                        :working_dir "/app/source"
                        :volumes ["/home/rgrau/.mba/home/:/root/"
-                                 "/home/rgrau/.mba/.m2/:/root/.m2"
-                                 "/home/rgrau/.mba/node_modules/:/root/node_modules/"
                                  (str (System/getProperty "user.dir") ":/app/source/")
-                                 "h2vol:/app/source/metabase-h2-db/"
-]
-
+                                 "h2vol:/app/source/metabase-h2-db/"]
                        :environment
                        {:MBA_CLI "lein run h2"
                         :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"
@@ -189,8 +185,7 @@
                        :command "tail -f /dev/null"
                        :ports ["3000" "8080" "7888"]
                        :networks ["d" "dp"]
-                       :labels {"com.metabase.d" true}}}
-                     })
+                       :labels {"com.metabase.d" true}}}})
 
 (def all-dbs {:postgres "jdbc:postgresql://postgres:5432/metabase?user=metauser&password=metapass"
               :mariadb-latest "jdbc:mysql://mariadb-latest:3306/metabase_test?user=root"
@@ -310,6 +305,21 @@
   (prepare-dc opts)
   (exec-into "metabase" "sh" "-l" "-c" "-i" "bash"))
 
+(defmethod task :go
+  ;; it is difficult to open the files from host but send things
+  ;; through cider-connect through docker because the cider tells
+  ;; emacs to open things in /root/.m2/.... but in localhost, they are
+  ;; in /home/rgrau/.m2... . crap
+  [[_ opts]]
+  (prepare-dc opts)
+  ;; "lein update-in :dependencies conj \[nrepl/nrepl\ \"0.8.3\"\] -- update-in :plugins conj \[cider/cider-nrepl\ \"0.25.8\"\] -- repl :headless :host 0.0.0.0 :port 7888"
+
+  ;; lein update-in :dependencies conj \[nrepl/nrepl\ \"0.8.3\"\] -- update-in :plugins conj \[refactor-nrepl\ \"2.5.1\"\] -- update-in :plugins conj \[cider/cider-nrepl\ \"0.25.8\"\] -- repl :headless :host localhost ;
+  (exec-into "metabase" "echo" "lein" "update-in" ":dependencies" "conj" "[nrepl/nrepl \"0.8.3\"]" "--"
+             "update-in" ":plugins" "conj" "[refactor-nrepl \"2.5.1\"]" "--"
+             "update-in" ":plugins" "conj" "[cider/cider-nrepl \"0.25.8\"]" "--"
+             "repl" ":headless" ":host" "0.0.0.0" ":port" "7888"))
+
 (defmethod task :dbconsole
   ;; EACH possible container should add an env var MBA_CLI that will
   ;; be ran by this command to open a shell.
@@ -354,7 +364,14 @@
     (println "  " n1 "      *  #####  #* ")
     (println "  " n2 "      ************ ")
     (println "")
-    (println (second summary))))
+    (println (second summary))
+    (println "")
+    (println "Emacs config:")
+    (prn '(setq cider-path-translations '(("/app/source" . "~/workspace/metabase")
+                                              ("/root/.m2/" . "~/.mba/home/.m2/"))))
+
+
+    ))
 
 ;; * CLI
 
@@ -377,8 +394,8 @@
    ["-t" "--tag TAG" "metabase/metabase:v0.37.9  or path-to-source"
     :default nil
     :validate [#(or (.exists (clojure.java.io/file %))
-                    (re-find #"\w+/\w+:?.*" %))]
-    ]
+                    (re-find #"\w+/\w+:?.*" %))]]
+
    [nil "--proxy proxy-type" "use reverse proxy"
     :default nil
     :parse-fn (comp keyword str/lower-case)
