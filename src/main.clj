@@ -303,7 +303,7 @@
 (defmethod task :shell
   [[_ opts]]
   (prepare-dc opts)
-  (exec-into "metabase" "sh" "-l" "-c" "-i" "bash"))
+  (exec-into "metabase" "bash"))
 
 (defmethod task :go
   ;; it is difficult to open the files from host but send things
