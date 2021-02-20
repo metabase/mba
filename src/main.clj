@@ -10,6 +10,8 @@
    [clj-yaml.core :as yaml]
    [clojure.string :as str]))
 
+(def pwd (str (System/getProperty "user.dir") "/"))
+
 ;; * data
 (def reverse-proxies {:haproxy
                       {:image "haproxy:2.3.4-alpine"
@@ -153,9 +155,7 @@
                  :volumes ["h2vol:/opt/h2-data/"]
                  :environment
                  {:MBA_CLI "bash"}
-                 }
-
-                })
+                 }})
 
 (def docker-compose {:version "3.5"
                      :networks {:d {} :dp {}}
@@ -168,7 +168,7 @@
                        :labels {"com.metabase.d" true}}
 
                       :metabase
-                      {:build {:context "/home/rgrau/workspace/metabase/.devcontainer/"
+                      {:build {:context (str pwd ".devcontainer/")
                                :dockerfile "Dockerfile"}
 
                        :working_dir "/app/source"
@@ -367,8 +367,8 @@
     (println (second summary))
     (println "")
     (println "Emacs config:")
-    (prn '(setq cider-path-translations '(("/app/source" . "~/workspace/metabase")
-                                              ("/root/.m2/" . "~/.mba/home/.m2/"))))
+    (prn (setq cider-path-translations '(("/app/source" . "~/workspace/metabase")
+                                         ("/root/.m2/" . "~/.mba/home/.m2/"))))
 
 
     ))
