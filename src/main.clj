@@ -377,9 +377,15 @@
 
 (def cli-options
   "https://github.com/clojure/tools.cli#example-usage"
-  [["-E" "--enterprise" "Enterprise edition"]
+  [["-E" "--enterprise ENTERPRISE"
+    "Enterprise edition"
+    :default true
+    :validate [#{"true" "false"}]]
    ["-h" "--help" "HALP!"]
-   ["-P" "--publish" "publish ports"]
+   ["-P" "--publish PUBLISH"
+    "publish ports"
+    :default true
+    :validate [#{"true" "false"}]]
    ;; ["-pp" "--port PORT" "Port number"
    ;;  :multi true
    ;;  :default ["3000" "8080" "7888"]
