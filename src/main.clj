@@ -129,7 +129,7 @@
                   :POSTGRES_DB "metabase"
                   :POSTGRES_MULTIPLE_DATABASES "metabase,metabase_test,harbormaster_dev,harbormaster_test"
                   :POSTGRES_HOST_AUTH_METHOD "trust"
-                  :MBA_CLI "psql -U metauser -d metabase"
+                  :MBA_DB_CLI "psql -U metauser -d metabase"
                   :MBA_SEED "psql -U metauser -d metabase -f /root/seed_clean.sql >/dev/null"
                   :MBA_DUMP "pg_dump -U metauser metabase --clean >/root/seed_clean.sql"}
                 :restart "on-failure"
@@ -154,8 +154,10 @@
                  :ports ["1521" "81"]
                  :volumes ["h2vol:/opt/h2-data/"]
                  :environment
-                 {:MBA_CLI "bash"}
-                 }})
+                 {:MBA_DB_CLI "bash"}
+                 }
+
+                })
 
 (def docker-compose {:version "3.5"
                      :networks {:d {} :dp {}}
@@ -176,8 +178,9 @@
                                  (str (System/getProperty "user.dir") ":/app/source/")
                                  "h2vol:/app/source/metabase-h2-db/"]
                        :environment
-                       {:MBA_CLI "lein run h2"
+                       {:MBA_DB_CLI "lein run h2"
                         :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"
+                        :MBA_CLI "lein update-in :dependencies conj \\[nrepl/nrepl\\ \\"0.8.3\\"\\] -- update-in :plugins conj \\[refactor-nrepl\\ \\"2.5.0\\"\\] -- update-in :plugins conj \\[cider/cider-nrepl\\ \\"0.25.5\\"\\] -- repl :headless :host 0.0.0.0  :port 7888"
                         }
                        :tty "True"
                        :stdin_open "True"
@@ -314,11 +317,18 @@
   (prepare-dc opts)
   ;; "lein update-in :dependencies conj \[nrepl/nrepl\ \"0.8.3\"\] -- update-in :plugins conj \[cider/cider-nrepl\ \"0.25.8\"\] -- repl :headless :host 0.0.0.0 :port 7888"
 
-  ;; lein update-in :dependencies conj \[nrepl/nrepl\ \"0.8.3\"\] -- update-in :plugins conj \[refactor-nrepl\ \"2.5.1\"\] -- update-in :plugins conj \[cider/cider-nrepl\ \"0.25.8\"\] -- repl :headless :host localhost ;
-  (exec-into "metabase" "echo" "lein" "update-in" ":dependencies" "conj" "[nrepl/nrepl \"0.8.3\"]" "--"
-             "update-in" ":plugins" "conj" "[refactor-nrepl \"2.5.1\"]" "--"
-             "update-in" ":plugins" "conj" "[cider/cider-nrepl \"0.25.8\"]" "--"
-             "repl" ":headless" ":host" "0.0.0.0" ":port" "7888"))
+  ;; lein update-in :dependencies conj \[nrepl/nrepl\ \"0.8.3\"\] --
+  ;; update-in :plugins conj \[refactor-nrepl\ \"2.5.1\"\] --
+  ;; update-in :plugins conj \[cider/cider-nrepl\ \"0.25.8\"\] --
+  ;; repl :headless :host localhost ;
+
+  ;; (exec-into "metabase"
+  ;;            (str
+  ;;             "lein update-in :dependencies conj [nrepl/nrepl \"0.8.3\"] update-in :plugins conj [refactor-nrepl \"2.5.1\"] update-in :plugins conj [cider/cider-nrepl \"0.25.8\"] repl :headless :host 0.0.0.0 :port 7888")
+  ;;            )
+
+  (exec-into "metabase" "lein update-in :dependencies conj [nrepl/nrepl \"0.8.3\"] repl :headless :host 0.0.0.0 :port 7888" )
+  )
 
 (defmethod task :dbconsole
   ;; EACH possible container should add an env var MBA_CLI that will
@@ -364,14 +374,12 @@
     (println "  " n1 "      *  #####  #* ")
     (println "  " n2 "      ************ ")
     (println "")
-    (println (second summary))
+    (println "Summary:")
+    (println summary)
     (println "")
     (println "Emacs config:")
-    (prn (setq cider-path-translations '(("/app/source" . "~/workspace/metabase")
-                                         ("/root/.m2/" . "~/.mba/home/.m2/"))))
-
-
-    ))
+    (prn '(setq cider-path-translations '(("/app/source" . "~/workspace/metabase")
+                                          ("/root/.m2/" . "~/.mba/home/.m2/"))))))
 
 ;; * CLI
 
