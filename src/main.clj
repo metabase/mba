@@ -69,7 +69,7 @@
                  {:MYSQL_DATABASE "metabase_test"
                   :MYSQL_USER "root"
                   :MYSQL_ALLOW_EMPTY_PASSWORD "yes"
-                  :MBA_CLI "mysql --user=root --database=metabase_test"}
+                  :MBA_DB_CLI "mysql --user=root --database=metabase_test"}
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -155,9 +155,7 @@
                  :volumes ["h2vol:/opt/h2-data/"]
                  :environment
                  {:MBA_DB_CLI "bash"}
-                 }
-
-                })
+                 }})
 
 (def docker-compose {:version "3.5"
                      :networks {:d {} :dp {}}
@@ -180,7 +178,7 @@
                        :environment
                        {:MBA_DB_CLI "lein run h2"
                         :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"
-                        :MBA_CLI "lein update-in :dependencies conj \\[nrepl/nrepl\\ \\"0.8.3\\"\\] -- update-in :plugins conj \\[refactor-nrepl\\ \\"2.5.0\\"\\] -- update-in :plugins conj \\[cider/cider-nrepl\\ \\"0.25.5\\"\\] -- repl :headless :host 0.0.0.0  :port 7888"
+                        :MBA_CLI "lein update-in :dependencies conj \\[nrepl/nrepl\\ \\\"0.8.3\\\"\\] -- update-in :plugins conj \\[refactor-nrepl\\ \\\"2.5.0\\\"\\] -- update-in :plugins conj \\[cider/cider-nrepl\\ \\\"0.25.5\\\"\\] -- repl :headless :host 0.0.0.0  :port 7888"
                         }
                        :tty "True"
                        :stdin_open "True"
@@ -309,34 +307,17 @@
   (exec-into "metabase" "bash"))
 
 (defmethod task :go
-  ;; it is difficult to open the files from host but send things
-  ;; through cider-connect through docker because the cider tells
-  ;; emacs to open things in /root/.m2/.... but in localhost, they are
-  ;; in /home/rgrau/.m2... . crap
   [[_ opts]]
   (prepare-dc opts)
-  ;; "lein update-in :dependencies conj \[nrepl/nrepl\ \"0.8.3\"\] -- update-in :plugins conj \[cider/cider-nrepl\ \"0.25.8\"\] -- repl :headless :host 0.0.0.0 :port 7888"
-
-  ;; lein update-in :dependencies conj \[nrepl/nrepl\ \"0.8.3\"\] --
-  ;; update-in :plugins conj \[refactor-nrepl\ \"2.5.1\"\] --
-  ;; update-in :plugins conj \[cider/cider-nrepl\ \"0.25.8\"\] --
-  ;; repl :headless :host localhost ;
-
-  ;; (exec-into "metabase"
-  ;;            (str
-  ;;             "lein update-in :dependencies conj [nrepl/nrepl \"0.8.3\"] update-in :plugins conj [refactor-nrepl \"2.5.1\"] update-in :plugins conj [cider/cider-nrepl \"0.25.8\"] repl :headless :host 0.0.0.0 :port 7888")
-  ;;            )
-
-  (exec-into "metabase" "lein update-in :dependencies conj [nrepl/nrepl \"0.8.3\"] repl :headless :host 0.0.0.0 :port 7888" )
-  )
+  (exec-into "metabase" "eval $MBA_CLI" ))
 
 (defmethod task :dbconsole
-  ;; EACH possible container should add an env var MBA_CLI that will
-  ;; be ran by this command to open a shell.
+  ;; EACH possible db container should add an env var MBA_DB_CLI that
+  ;; will be ran by this command to open a shell.
   [[_ opts]]
   (prepare-dc opts)
   (let [app-db (name (:app-db opts))]
-    (exec-into app-db "sh" "-l" "-i" "-c" "$MBA_CLI")))
+    (exec-into app-db "sh" "-l" "-i" "-c" "$MBA_DB_CLI")))
 
 (defmethod task :install-dep
   [[_ opts]]
@@ -376,6 +357,13 @@
     (println "")
     (println "Summary:")
     (println summary)
+    (println "Usage:")
+    (println "mba up")
+    (println "mba go")
+    (println "mba dbconsole")
+    (println "firefox $(mba port maildev 80)")
+    (println "mba logs -- -f -t maildev")
+    (println "mba logs -- -f -t postgres")
     (println "")
     (println "Emacs config:")
     (prn '(setq cider-path-translations '(("/app/source" . "~/workspace/metabase")
