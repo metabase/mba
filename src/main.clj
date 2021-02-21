@@ -11,14 +11,15 @@
    [clojure.string :as str]))
 
 (def pwd (str (System/getProperty "user.dir") "/"))
+(def resources (str *file* "/../resources/"))
 
 ;; * data
 (def reverse-proxies {:haproxy
                       {:image "haproxy:2.3.4-alpine"
                        :hostname "haproxy"
                        :volumes
-                       ["/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/haproxy/config/:/usr/local/etc/haproxy/:ro"
-                        "/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/haproxy/log:/dev/log"]
+                       [(str resources "/stacks/reverse-proxies/haproxy/config/:/usr/local/etc/haproxy/:ro")
+                        (str resources "/stacks/reverse-proxies/haproxy/log:/dev/log")]
                        :networks ["d" "dp"]
                        :ports ["8080:80"]
                        :depends_on ["metabase"]
@@ -27,8 +28,8 @@
                       {:image "envoyproxy/envoy-alpine:v1.17.0"
                        :hostname "envoy"
                        :volumes
-                       ["/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/envoy/config/envoy.yaml:/etc/envoy/envoy.yaml"
-                        "/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/envoy/logs:/var/log"]
+                       [(str resources "/stacks/reverse-proxies/envoy/config/envoy.yaml:/etc/envoy/envoy.yaml")
+                        (str resources "/stacks/reverse-proxies/envoy/logs:/var/log")]
                        :networks ["d" "dp"]
                        :ports ["8080:80"]
                        :depends_on ["metabase"]
@@ -37,7 +38,7 @@
                       {:image "nginx:1.19.6-alpine"
                        :hostname "nginx"
                        :volumes
-                       ["/home/rgrau/workspace/dev-scripts/stacks/reverse-proxies/nginx/nginx.conf:/etc/nginx/conf.d/default.conf"]
+                       [(str resources "/stacks/reverse-proxies/nginx/nginx.conf:/etc/nginx/conf.d/default.conf")]
                        :networks ["d" "dp"]
                        :ports ["8080:80"]
                        :depends_on ["metabase"]}})
@@ -45,7 +46,7 @@
 (def databases {:mysql57
                 {:image "circleci/mysql:5.7.23"
                  :user "root"
-                 :volumes ["/home/rgrau/.mba/home/:/root/"]
+                 :volumes [(str resources "/.mba/home/:/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -55,7 +56,7 @@
                 :mongodb
                 {:image "circleci/mongo:4.0"
                  :user "root"
-                 :volumes ["/home/rgrau/.mba/home/:/root/"]
+                 :volumes [(str resources "/.mba/home/:/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -64,7 +65,7 @@
 
                 :mariadb-latest
                 {:image "mariadb:latest"
-                 :volumes ["/home/rgrau/.mba/home/:/root/"]
+                 :volumes [(str resources "/.mba/home/:/root/")]
                  :environment
                  {:MYSQL_DATABASE "metabase_test"
                   :MYSQL_USER "root"
@@ -78,7 +79,7 @@
 
                 :presto
                 {:image "metabase/presto-mb-ci"
-                 :volumes ["/home/rgrau/.mba/home/:/root/"]
+                 :volumes [(str resources "/.mba/home/:/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -87,7 +88,7 @@
 
                 :sparksql
                 {:image "metabase/spark:2.1.1"
-                 :volumes ["/home/rgrau/.mba/home/:/root/"]
+                 :volumes [(str resources "/.mba/home/:/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -99,7 +100,7 @@
                  :environment
                  {:ACCEPT_EULA "Y"
                   :SA_PASSWORD "P@ssw0rd"}
-                 :volumes ["/home/rgrau/.mba/home/:/root/"]
+                 :volumes [(str resources "/.mba/home/:/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -111,7 +112,7 @@
                  :environment
                  {:ACCEPT_EULA "Y"
                   :SA_PASSWORD "P@ssw0rd"}
-                 :volumes ["/home/rgrau/.mba/home/:/root/"]
+                 :volumes [(str resources "/.mba/home/:/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -121,8 +122,8 @@
                 :postgres
                 {:image "postgres:12"
                  :user "root"
-                 :volumes ["/home/rgrau/.mba/home/:/root/"
-                           "/home/rgrau/workspace/mba/resources/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/"]
+                 :volumes [(str resources "/.mba/home/:/root/")
+                           (str resources "/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/")]
                  :environment
                  {:POSTGRES_USER "metauser"
                   :POSTGRES_PASSWORD "metapass"
@@ -168,13 +169,13 @@
                        :labels {"com.metabase.d" true}}
 
                       :metabase
-                      {:build {:context (str pwd ".devcontainer/")
+                      {:build {:context (str pwd ".devcontainer/") ; ?! maybe unify to
                                :dockerfile "Dockerfile"}
 
                        :working_dir "/app/source"
-                       :volumes ["/home/rgrau/.mba/home/:/root/"
-                                 (str (System/getProperty "user.dir") ":/app/source/")
-                                 "h2vol:/app/source/metabase-h2-db/"]
+                       :volumes [(str resources "/.mba/home/:/root/") ; home
+                                 (str (System/getProperty "user.dir") ":/app/source/") ; app source
+                                 "h2vol:/app/source/metabase-h2-db/"] ; h2
                        :environment
                        {:MBA_DB_CLI "lein run h2"
                         :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"
@@ -230,7 +231,8 @@
            (assoc-in [:services :metabase :image]
                      (str "metabase/metabase"
                           (and (:enterprise opts) "-enterprise"))) ; not very cool entanglement
-           (update-in [:services :metabase] dissoc :command))
+           (update-in [:services :metabase] dissoc :command)
+           (update-in [:services :metabase] dissoc :build))
 
           ;; CE / EE
           (not (nil? (:enterprise opts)))
