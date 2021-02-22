@@ -154,6 +154,9 @@
                 {:image "oscarfonts/h2"
                  :ports ["1521" "81"]
                  :volumes ["h2vol:/opt/h2-data/"]
+                 :command "tail -f /dev/null" ; if we let the image
+                                              ; run normally it locks
+                                              ; the db file!!! wtf
                  :environment
                  {:MBA_DB_CLI "bash"}
                  }})
@@ -175,9 +178,13 @@
                        :working_dir "/app/source"
                        :volumes [(str resources "/.mba/home/:/root/") ; home
                                  (str (System/getProperty "user.dir") ":/app/source/") ; app source
+                                 ;(str resources "/.mba/.m2/:/root/.m2/")
+                                 ;(str resources "/.mba/node_modules/:/root/node_modules/")
                                  "h2vol:/app/source/metabase-h2-db/"] ; h2
                        :environment
-                       {:MBA_DB_CLI "lein run h2"
+                       {
+                        ;; :JAVA_OPTS "-Dlog4j.configurationFile=file:///metabase.db/log4j2.xml"
+                        :MBA_DB_CLI "lein run h2"
                         :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"
                         :MBA_CLI "lein update-in :dependencies conj \\[nrepl/nrepl\\ \\\"0.8.3\\\"\\] -- update-in :plugins conj \\[refactor-nrepl\\ \\\"2.5.0\\\"\\] -- update-in :plugins conj \\[cider/cider-nrepl\\ \\\"0.25.5\\\"\\] -- repl :headless :host 0.0.0.0  :port 7888"
                         }
@@ -289,7 +296,6 @@
       (.start)
       (.waitFor)))
 
-
 (defn- exec-to
   ;; try with $ foo=hola mba exec-to echo foo
   [container & cmds]
@@ -297,11 +303,6 @@
       (.inheritIO)
       (.start)
       (.waitFor)))
-
-(defmethod task :exec-to
-  [[_ opts]]
-  (prepare-dc opts)
-  (exec-to "metabase" "bash"))
 
 (defmethod task :shell
   [[_ opts]]
