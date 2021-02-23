@@ -186,7 +186,7 @@
                         ;; :JAVA_OPTS "-Dlog4j.configurationFile=file:///metabase.db/log4j2.xml"
                         :MBA_DB_CLI "lein run h2"
                         :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"
-                        :MBA_CLI "lein update-in :dependencies conj \\[nrepl/nrepl\\ \\\"0.8.3\\\"\\] -- update-in :plugins conj \\[refactor-nrepl\\ \\\"2.5.0\\\"\\] -- update-in :plugins conj \\[cider/cider-nrepl\\ \\\"0.25.5\\\"\\] -- repl :headless :host 0.0.0.0  :port 7888"
+                        :MBA_CLI "lein update-in :dependencies conj \\[nrepl/nrepl\\ \\\"0.8.3\\\"\\] -- update-in :plugins conj \\[refactor-nrepl\\ \\\"2.5.1\\\"\\] -- update-in :plugins conj \\[cider/cider-nrepl\\ \\\"0.25.8\\\"\\] -- repl-ee :headless :host 0.0.0.0  :port 7888"
                         }
                        :tty "True"
                        :stdin_open "True"
@@ -320,7 +320,7 @@
   [[_ opts]]
   (prepare-dc opts)
   (let [app-db (name (:app-db opts))]
-    (exec-into app-db "sh" "-l" "-i" "-c" "$MBA_DB_CLI")))
+    (exec-into app-db "$MBA_DB_CLI")))
 
 (defmethod task :install-dep
   [[_ opts]]
