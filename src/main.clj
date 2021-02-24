@@ -129,18 +129,16 @@
                 {:image "postgres:12"
                  :user "root"
                  :volumes [(str resources "/.mba/home/:/root/")
-                           (str resources "/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/")
-                           (str resources "/postgres/postgres.conf:/etc/postgres.conf")]
+                           (str resources "/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/")]
                  :environment
                  {:POSTGRES_USER "metauser"
                   :POSTGRES_PASSWORD "metapass"
-                  :POSTGRES_DB "metabase"
+                  :POSTGRES_DB "metauser"
                   :POSTGRES_MULTIPLE_DATABASES "metabase,metabase_test,harbormaster_dev,harbormaster_test"
                   :POSTGRES_HOST_AUTH_METHOD "trust"
                   :MBA_DB_CLI "psql -U metauser -d metabase"
                   :MBA_SEED "psql -U metauser -d metabase -f /root/seed_clean.sql >/dev/null"
                   :MBA_DUMP "pg_dump -U metauser metabase --clean >/root/seed_clean.sql"}
-                 :command ["postgres -c 'config_file=/etc/postgresql.conf'"]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
