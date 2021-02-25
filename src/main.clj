@@ -11,6 +11,8 @@
    [clojure.string :as str]))
 
 (def pwd (str (System/getProperty "user.dir") "/"))
+(def home (str (System/getProperty "user.home") "/"))
+(def mba-config (str home ".mba/"))
 
 ;; ಠ_ಠ
 (def resources
@@ -52,7 +54,7 @@
 (def databases {:mysql57
                 {:image "circleci/mysql:5.7.23"
                  :user "root"
-                 :volumes [(str resources "/.mba/home/:/root/")]
+                 :volumes [(str mba-config "/.mba-home/:/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -62,7 +64,7 @@
                 :mongodb
                 {:image "circleci/mongo:4.0"
                  :user "root"
-                 :volumes [(str resources "/.mba/home/:/root/")]
+                 :volumes [(str mba-config "/.mba-home/:/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -71,7 +73,7 @@
 
                 :mariadb-latest
                 {:image "mariadb:latest"
-                 :volumes [(str resources "/.mba/home/:/root/")]
+                 :volumes [(str mba-config "/.mba-home/:/root/")]
                  :environment
                  {:MYSQL_DATABASE "metabase_test"
                   :MYSQL_USER "root"
@@ -85,7 +87,7 @@
 
                 :presto
                 {:image "metabase/presto-mb-ci"
-                 :volumes [(str resources "/.mba/home/:/root/")]
+                 :volumes [(str mba-config "/.mba-home/:/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -94,7 +96,7 @@
 
                 :sparksql
                 {:image "metabase/spark:2.1.1"
-                 :volumes [(str resources "/.mba/home/:/root/")]
+                 :volumes [(str mba-config "/.mba-home/:/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -106,7 +108,7 @@
                  :environment
                  {:ACCEPT_EULA "Y"
                   :SA_PASSWORD "P@ssw0rd"}
-                 :volumes [(str resources "/.mba/home/:/root/")]
+                 :volumes [(str mba-config "/.mba-home/:/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -118,7 +120,7 @@
                  :environment
                  {:ACCEPT_EULA "Y"
                   :SA_PASSWORD "P@ssw0rd"}
-                 :volumes [(str resources "/.mba/home/:/root/")]
+                 :volumes [(str mba-config "/.mba-home/:/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -128,7 +130,7 @@
                 :postgres
                 {:image "postgres:12"
                  :user "root"
-                 :volumes [(str resources "/.mba/home/:/root/")
+                 :volumes [(str mba-config "/.mba-home/:/root/")
                            (str resources "/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/")]
                  :environment
                  {:POSTGRES_USER "metauser"
@@ -182,10 +184,10 @@
                                :dockerfile "Dockerfile"}
 
                        :working_dir "/app/source"
-                       :volumes [(str resources "/.mba/home/:/root/") ; home
+                       :volumes [(str mba-config "/.mba-home/:/root/") ; home
                                  (str (System/getProperty "user.dir") ":/app/source/") ; app source
-                                 ;(str resources "/.mba/.m2/:/root/.m2/")
-                                 ;(str resources "/.mba/node_modules/:/root/node_modules/")
+                                 ;(str mba-config "/.mba/.m2/:/root/.m2/")
+                                 ;(str mba-config "/.mba/node_modules/:/root/node_modules/")
                                  "h2vol:/app/source/metabase-h2-db/"] ; h2
                        :environment
                        {
@@ -274,11 +276,16 @@
 (defmethod task :default
   [[cmd opts args]]
   (prepare-dc opts)
-  (process `["docker-compose" "-f" ~(.getPath my-temp-file) ~@args]
-           {:out :inherit :err :inherit})
+  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) ~@args])
+      (.inheritIO)
+      (.start)
+      (.waitFor))
+
+  ;; (process `["docker-compose" "-f" ~(.getPath my-temp-file) ~@args]
+  ;;          {:out :inherit :err :inherit})
   ;; (-> ^{:out :inherit :err :inherit}
   ;;     ($ docker-compose -f ~my-temp-file ~(name cmd)))
-  nil)
+  )
 
 (defmacro with-filter
   "Still not useful now, but it will be.
@@ -297,6 +304,9 @@
 
 (defn- exec-into
   [container & cmds]
+  ;; https://github.com/babashka/babashka/blob/master/examples/process_builder.clj
+  ;; https://github.com/babashka/babashka/issues/299
+  ;; https://book.babashka.org/#child_processes
   (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "exec" ~container "sh" "-l" "-i" "-c" ~@cmds])
       (.inheritIO)
       (.start)
@@ -309,6 +319,17 @@
       (.inheritIO)
       (.start)
       (.waitFor)))
+
+(defmethod task :up
+  [[_ opts args]]
+  (prepare-dc opts)
+  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "up" "-d"])
+      (.inheritIO)
+      (.start)
+      (.waitFor))
+  (println args opts)
+  )
+
 
 (defmethod task :shell
   [[_ opts]]
@@ -346,7 +367,6 @@
         p2 (rand-int (count (first next-piece)))
         n1 (get (first next-piece) p2)
         n2 (get (second next-piece) p2)]
-    ;; (println "HELP ME, BYZANTINE MUSICAL SYMBOL SYNAGMA META STAVROU! 𝀫")
     (println "            MetaBaseAssembler: ")
     (println "")
     (println "              *          * ")
@@ -376,7 +396,7 @@
     (println "")
     (println "Emacs config:")
     (prn '(setq cider-path-translations '(("/app/source" . "~/workspace/metabase")
-                                          ("/root/.m2/" . "~/.mba/home/.m2/"))))))
+                                          ("/root/.m2/" . "~/.mba-home/.m2/"))))))
 
 ;; * CLI
 
