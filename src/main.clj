@@ -1,6 +1,7 @@
 #!/usr/bin/env bb
 (ns mybbt.main
   (:require
+   [babashka.fs :as fs]
    [clojure.java.shell :as sh]
    [clojure.java.io :as io]
    [clojure.repl :refer :all]
@@ -13,6 +14,7 @@
 (def pwd (str (System/getProperty "user.dir") "/"))
 (def home (str (System/getProperty "user.home") "/"))
 (def mba-config (str home ".mba/"))
+(def mba-home (str mba-config ".mba-home/"))
 
 ;; ಠ_ಠ
 (def resources
@@ -54,7 +56,7 @@
 (def databases {:mysql57
                 {:image "circleci/mysql:5.7.23"
                  :user "root"
-                 :volumes [(str mba-config "/.mba-home/:/root/")]
+                 :volumes [(str mba-home ":/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -64,7 +66,7 @@
                 :mongodb
                 {:image "circleci/mongo:4.0"
                  :user "root"
-                 :volumes [(str mba-config "/.mba-home/:/root/")]
+                 :volumes [(str mba-home ":/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -73,7 +75,7 @@
 
                 :mariadb-latest
                 {:image "mariadb:latest"
-                 :volumes [(str mba-config "/.mba-home/:/root/")]
+                 :volumes [(str mba-home ":/root/")]
                  :environment
                  {:MYSQL_DATABASE "metabase_test"
                   :MYSQL_USER "root"
@@ -87,7 +89,7 @@
 
                 :presto
                 {:image "metabase/presto-mb-ci"
-                 :volumes [(str mba-config "/.mba-home/:/root/")]
+                 :volumes [(str mba-home ":/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -96,7 +98,7 @@
 
                 :sparksql
                 {:image "metabase/spark:2.1.1"
-                 :volumes [(str mba-config "/.mba-home/:/root/")]
+                 :volumes [(str mba-home ":/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -108,7 +110,7 @@
                  :environment
                  {:ACCEPT_EULA "Y"
                   :SA_PASSWORD "P@ssw0rd"}
-                 :volumes [(str mba-config "/.mba-home/:/root/")]
+                 :volumes [(str mba-home ":/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -120,7 +122,7 @@
                  :environment
                  {:ACCEPT_EULA "Y"
                   :SA_PASSWORD "P@ssw0rd"}
-                 :volumes [(str mba-config "/.mba-home/:/root/")]
+                 :volumes [(str mba-home ":/root/")]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -130,7 +132,7 @@
                 :postgres
                 {:image "postgres:12"
                  :user "root"
-                 :volumes [(str mba-config "/.mba-home/:/root/")
+                 :volumes [(str mba-home ":/root/")
                            (str resources "/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/")]
                  :environment
                  {:POSTGRES_USER "metauser"
@@ -184,13 +186,14 @@
                                :dockerfile "Dockerfile"}
 
                        :working_dir "/app/source"
-                       :volumes [(str mba-config "/.mba-home/:/root/") ; home
+                       :volumes [(str mba-home ":/root/") ; home
                                  (str (System/getProperty "user.dir") ":/app/source/") ; app source
-                                 ;(str mba-config "/.mba/.m2/:/root/.m2/")
-                                 ;(str mba-config "/.mba/node_modules/:/root/node_modules/")
                                  "h2vol:/app/source/metabase-h2-db/"
-                                 ;; XXX: if you change this, 00-restore-env.sh will be the one from the docker image, which sets java 15 as the default one,
-                                 ;; and mb doesn't start then.
+                                 ;; XXX: if you change this, 00-restore-env.sh
+                                 ;; will be the one from the docker
+                                 ;; image, which sets java 15 as the
+                                 ;; default one, and mb doesn't start
+                                 ;; then.
                                  ;; (str resources "/base/profile.sh:/etc/profile.d/99-profile.sh")
                                  (str resources "/base/profile.sh:/etc/profile.d/00-restore-env.sh")
                                  ] ; h2
@@ -445,7 +448,7 @@
    ["-n" "--network NETWORK" "network name" :default nil]
    ["-t" "--tag TAG" "metabase/metabase:v0.37.9  or path-to-source"
     :default nil
-    :validate [#(or (.exists (clojure.java.io/file %))
+    :validate [#(or (.exists (io/file %))
                     (re-find #"\w+/\w+:?.*" %))]]
 
    [nil "--proxy proxy-type" "use reverse proxy"
@@ -461,6 +464,13 @@
     :parse-fn (comp keyword str/lower-case)
     :validate [#{:postgres :postgresql :mysql :mongo :mariadb-latest :vertica} ]]])
 
+
+(defn- ensure-dirs
+  []
+  (when (not (.exists (io/file mba-home)))
+    (fs/create-dirs mba-home)
+    (fs/copy-tree (str resources "/home/") mba-home)))
+
 (defn -main
   "fubar"
   [& args]
@@ -473,6 +483,7 @@
     (when (seq errors)
       (println errors)
       (System/exit 1))
+    (ensure-dirs)
     (task [(keyword (or cmd :help)) options arguments])
     nil))
 
