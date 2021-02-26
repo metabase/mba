@@ -188,10 +188,13 @@
                                  (str (System/getProperty "user.dir") ":/app/source/") ; app source
                                  ;(str mba-config "/.mba/.m2/:/root/.m2/")
                                  ;(str mba-config "/.mba/node_modules/:/root/node_modules/")
-                                 "h2vol:/app/source/metabase-h2-db/"] ; h2
+                                 "h2vol:/app/source/metabase-h2-db/"
+                                 (str resources "/base/profile.sh:/etc/profile.d/99-profile.sh")
+                                 ] ; h2
                        :environment
                        {
                         ;; :JAVA_OPTS "-Dlog4j.configurationFile=file:///metabase.db/log4j2.xml"
+                        :MBA_PREFIX "MB"
                         :MBA_DB_CLI "lein run h2"
                         :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"
                         :MBA_CLI "lein update-in :dependencies conj \\[nrepl/nrepl\\ \\\"0.8.3\\\"\\] -- update-in :plugins conj \\[refactor-nrepl\\ \\\"2.5.1\\\"\\] -- update-in :plugins conj \\[cider/cider-nrepl\\ \\\"0.25.8\\\"\\] -- run-and-repl-ee :headless :host 0.0.0.0  :port 7888"
@@ -229,7 +232,8 @@
   (let [app-db (keyword (:app-db opts))
         data-db (keyword (:data-db opts))
         proxy (keyword (:proxy opts))
-        publish (:publish opts)]
+        publish (:publish opts)
+        prefix (:prefix opts)]
     (-> (cond-> (assemble-app-db docker-compose app-db)
 
           ;; data-db
@@ -264,7 +268,11 @@
 
           publish
           (assoc-in [:services :metabase :ports]
-                    ["3000:3000" "8080:8080" "7888:7888"]))
+                    ["3000:3000" "8080:8080" "7888:7888"])
+
+          ;;prefix
+          ;;(update :services #(update-values % assoc-in [:environment :prefix] prefix))
+          )
 
         docker-compose-yml
         docker-compose-yml-file!)))
@@ -327,14 +335,20 @@
       (.inheritIO)
       (.start)
       (.waitFor))
-  (println args opts)
-  )
+  (println args opts))
 
 
 (defmethod task :shell
   [[_ opts]]
   (prepare-dc opts)
-  (exec-into "metabase" "bash"))
+  ;; for now we specialcase this
+  ;; because (exec-into "metabase" "bash" "-l" "-i") wouldn't trigger
+  ;; the .profile.
+  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l""-i"])
+      (.inheritIO)
+      (.inheritIO)
+      (.start)
+      (.waitFor)))
 
 (defmethod task :go
   [[_ opts]]
