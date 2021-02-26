@@ -18,10 +18,7 @@
 
 ;; ಠ_ಠ
 (def resources
-  (str (str/trim-newline (:out
-                          (sh/sh "dirname"
-                                 (str/trim-newline
-                                  (:out (sh/sh "realpath" (str *file*)))))))  "/../resources/"))
+  (str (fs/absolutize (fs/normalize (fs/path (fs/real-path *file*) "../resources")))))
 
 ;; * data
 (def reverse-proxies {:haproxy
