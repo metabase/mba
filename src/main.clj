@@ -189,7 +189,10 @@
                                  ;(str mba-config "/.mba/.m2/:/root/.m2/")
                                  ;(str mba-config "/.mba/node_modules/:/root/node_modules/")
                                  "h2vol:/app/source/metabase-h2-db/"
-                                 (str resources "/base/profile.sh:/etc/profile.d/99-profile.sh")
+                                 ;; XXX: if you change this, 00-restore-env.sh will be the one from the docker image, which sets java 15 as the default one,
+                                 ;; and mb doesn't start then.
+                                 ;; (str resources "/base/profile.sh:/etc/profile.d/99-profile.sh")
+                                 (str resources "/base/profile.sh:/etc/profile.d/00-restore-env.sh")
                                  ] ; h2
                        :environment
                        {
@@ -197,7 +200,8 @@
                         :MBA_PREFIX "MB"
                         :MBA_DB_CLI "lein run h2"
                         :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"
-                        :MBA_CLI "lein update-in :dependencies conj \\[nrepl/nrepl\\ \\\"0.8.3\\\"\\] -- update-in :plugins conj \\[refactor-nrepl\\ \\\"2.5.1\\\"\\] -- update-in :plugins conj \\[cider/cider-nrepl\\ \\\"0.25.8\\\"\\] -- run-and-repl-ee :headless :host 0.0.0.0  :port 7888"
+                        :MBA_CLI "lein update-in :dependencies conj \\[nrepl/nrepl\\ \\\"0.8.3\\\"\\] -- update-in :plugins conj \\[refactor-nrepl\\ \\\"2.5.1\\\"\\] -- update-in :plugins conj \\[cider/cider-nrepl\\ \\\"0.25.8\\\"\\] -- repl-ee :headless :host 0.0.0.0  :port 7888"
+                        :MBA_YARN_BUILD "yarn && NODE_ENV=hot yarn webpack-dev-server --progress --host 0.0.0.0"
                         }
                        :tty "True"
                        :stdin_open "True"
@@ -344,7 +348,10 @@
   ;; for now we specialcase this
   ;; because (exec-into "metabase" "bash" "-l" "-i") wouldn't trigger
   ;; the .profile.
-  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l""-i"])
+
+  ;; should add "-l" , but it makes java 15 the default java, which we
+  ;; don't want because it fails to run
+  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l" "-i"])
       (.inheritIO)
       (.inheritIO)
       (.start)
