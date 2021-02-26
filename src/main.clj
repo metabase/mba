@@ -249,7 +249,7 @@
           (->
            (assoc-in [:services :metabase :image]
                      (str "metabase/metabase"
-                          (and (:enterprise opts) "-enterprise"))) ; not very cool entanglement
+                          (if (:enterprise opts) "-enterprise" ""))) ; not very cool entanglement
            (update-in [:services :metabase] dissoc :command)
            (update-in [:services :metabase] dissoc :build))
 
@@ -416,9 +416,9 @@
 
 (def cli-options
   "https://github.com/clojure/tools.cli#example-usage"
-  [["-E" "--enterprise ENTERPRISE"
+  [["-E" "--enterprise"
     "Enterprise edition"
-    :default true
+    :default nil
     :validate [#{"true" "false"}]]
    ["-h" "--help" "HALP!"]
    ["-P" "--publish PUBLISH"
