@@ -200,6 +200,9 @@
                         :MBA_PREFIX "MB"
                         :MBA_DB_CLI "lein run h2"
                         :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"
+                        :MB_EMAIL_SMTP_HOST "maildev"
+                        :MB_EMAIL_SMTP_PORT "25"
+                        :MB_ENABLE_TEST_ENDPOINTS "true"
                         :MBA_CLI "lein update-in :dependencies conj \\[nrepl/nrepl\\ \\\"0.8.3\\\"\\] -- update-in :plugins conj \\[refactor-nrepl\\ \\\"2.5.1\\\"\\] -- update-in :plugins conj \\[cider/cider-nrepl\\ \\\"0.25.8\\\"\\] -- repl-ee :headless :host 0.0.0.0  :port 7888"
                         :MBA_YARN_BUILD "yarn && NODE_ENV=hot yarn webpack-dev-server --progress --host 0.0.0.0"
                         }
