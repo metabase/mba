@@ -1,25 +1,24 @@
 * basics
 
 ** Dependencies
-   docker-compose
-   babashka (https://github.com/babashka/babashka/)  2.9 or more
+   - docker-compose
+   - babashka (https://github.com/babashka/babashka/)  2.9 or more
 
 ** Usage
    mba wraps docker-compose, and all commands it does not understand
    are passed to the underlying docker-compose.
 
-   - mba config == docker-compose -f .... config  . will show what is it about to generate
+   - =mba config == docker-compose -f tmp.yml config= . will show what
+     is it about to generate
 
    By default, it will share ports, but in the future, it will not
-   share, and make you user --port 3000:3000, so you can jail things
-   better.
+   share them, and make you use =--port 3000:3000= flags, so you can
+   jail things better.
 
-   - mba up . creates the stack
-   - mba down. destroys the stack
-   - mba shell. gives a shell inside the main metabase container
-   - mba dbconsole. console into the app-db
-
-
+   - =mba up= . creates the stack
+   - =mba down=. destroys the stack
+   - =mba shell=. gives a shell inside the main metabase container
+   - =mba dbconsole=. console into the app-db
 
    If it is ran in the metabase directory, it will run the
    .devcontainer image, so you should enter it and run the commands
