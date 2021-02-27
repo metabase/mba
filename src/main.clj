@@ -18,7 +18,7 @@
 
 ;; ಠ_ಠ
 (def resources
-  (str (fs/absolutize (fs/normalize (fs/path (fs/real-path *file*) "../resources")))))
+  (str (fs/absolutize (fs/normalize (fs/path (fs/real-path *file*) "../../resources")))))
 
 ;; * data
 (def reverse-proxies {:haproxy
@@ -192,8 +192,7 @@
                                  ;; default one, and mb doesn't start
                                  ;; then.
                                  ;; (str resources "/base/profile.sh:/etc/profile.d/99-profile.sh")
-                                 (str resources "/base/profile.sh:/etc/profile.d/00-restore-env.sh")
-                                 ] ; h2
+                                 (str resources "/base/profile.sh:/etc/profile.d/00-restore-env.sh")]
                        :environment
                        {
                         ;; :JAVA_OPTS "-Dlog4j.configurationFile=file:///metabase.db/log4j2.xml"
@@ -228,15 +227,17 @@
 (defn docker-compose-yml-file! [docker-compose-yml]
   (spit my-temp-file docker-compose-yml))
 
-
 (defn- assemble-app-db
   [config app-db]
-  (-> config
-      (assoc-in [:services :metabase :environment :MB_DB_CONNECTION_URI] (app-db all-dbs))
-      (assoc-in [:services app-db] (app-db databases))))
+  (let [[name version] (str/split app-db #":")
+        kw-name (keyword name)]
+    (-> config
+        (assoc-in [:services :metabase :environment :MB_DB_CONNECTION_URI] (kw-name all-dbs))
+        (assoc-in [:services kw-name] (kw-name databases))
+        (cond-> version (assoc-in [:services kw-name :image] app-db)))))
 
 (defn- prepare-dc [opts]
-  (let [app-db (keyword (:app-db opts))
+  (let [app-db (:app-db opts)
         data-db (keyword (:data-db opts))
         proxy (keyword (:proxy opts))
         publish (:publish opts)
@@ -369,9 +370,10 @@
   ;; EACH possible db container should add an env var MBA_DB_CLI that
   ;; will be ran by this command to open a shell.
   [[_ opts]]
-  (prepare-dc opts)
-  (let [app-db (name (:app-db opts))]
-    (exec-into app-db "$MBA_DB_CLI")))
+  (let [app-db (:app-db opts)
+        app-db-service (first (str/split app-db #":"))]
+    (prepare-dc opts)
+    (exec-into app-db-service "$MBA_DB_CLI")))
 
 (defmethod task :install-dep
   [[_ opts]]
@@ -457,8 +459,8 @@
     :validate [#{:nginx :envoy :haproxy}]]
    ["-d" "--app-db APP-DB"
     :default "h2"
-    :parse-fn (comp keyword str/lower-case)
-    :validate [#{:h2 :postgres :postgresql :mysql :mariadb-latest}]]
+    :parse-fn str/lower-case
+    :validate [#(#{:h2 :postgres :postgresql :mysql :mariadb-latest} (keyword (re-find #"^[^:]*" %)))]]
    ["-D" "--data-db DATA-DB"
     :default nil
     :parse-fn (comp keyword str/lower-case)

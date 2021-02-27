@@ -5,6 +5,8 @@ shopt -s histappend
 export HISTFILESIZE=100000
 export HISTCONTROL=ignorespace:erasedups
 
+# https://www.metabase.com/docs/latest/operations-guide/environment-variables.html
+
 mute() {
   $@ >/dev/null 2>/dev/null
 }
