@@ -38,6 +38,9 @@
 
    - mba --help may help you with the commands and option, but for the
      values, explore src/main.clj
+   - to pass flags to docker-compose , or any command underlying mba,
+     the way to pass as a parameter to inside is with =--=: =mba
+     --app-db postgres logs -- -f=
 
 
 * requirements to make it work as a dev env
