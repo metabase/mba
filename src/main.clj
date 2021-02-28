@@ -274,7 +274,7 @@
           proxy
           (update-in [:services] assoc proxy (proxy reverse-proxies))
 
-          publish
+          (and publish (not proxy))
           (assoc-in [:services :metabase :ports]
                     ["3000:3000" "8080:8080" "7888:7888"])
 

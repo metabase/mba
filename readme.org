@@ -24,9 +24,11 @@
    jail things better.
 
    - =mba up= . creates the stack
-   - =mba down=. destroys the stack
    - =mba shell=. gives a shell inside the main metabase container
    - =mba dbconsole=. console into the app-db
+   - =mba logs -- -f=. show logs
+   - =mba ps=. show containers on this stack
+   - =mba down=. destroys the stack
 
    If it is ran in the metabase directory, it will run the
    .devcontainer image, so you should enter it and run the commands
@@ -49,6 +51,15 @@
      the way to pass as a parameter to inside is with =--=: =mba
      --app-db postgres logs -- -f=
 
+** Different configurations
+   =mba --help= will show the options accepted by mba.
+   - =mba --app-db mariadb-latest --data-db=postgres=
+   - =mba --app-db mariadb-latest --data-db=postgres --proxy=nginx=
+
+** ports
+   by default, the stack will share port 3000, 8080 and 7888
+   (lein). if you're using a proxy, it won't share them, and will only
+   share 8080 as the main entrypoint.
 
 * requirements to make it work as a dev env
 
