@@ -2,7 +2,15 @@
 
 ** Dependencies
    - docker-compose
-   - babashka (https://github.com/babashka/babashka/)  2.9 or more
+   - babashka (https://github.com/babashka/babashka/)  2.9 or more.
+
+
+** install
+   - install babashka
+   - install docker && docker-compose
+   - git clone https://github.com/kidd/mba
+   - ln -s mba/src/main.clj ~/bin/mba
+   - mba --help
 
 ** Usage
    mba wraps docker-compose, and all commands it does not understand
