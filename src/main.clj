@@ -1,7 +1,7 @@
 #!/usr/bin/env bb
 (ns mybbt.main
   (:require
-   [babashka.fs :as fs]
+   ;; [babashka.fs :as fs]
    [clojure.java.shell :as sh]
    [clojure.java.io :as io]
    [clojure.repl :refer :all]
@@ -11,14 +11,18 @@
    [clj-yaml.core :as yaml]
    [clojure.string :as str]))
 
+;; * ಠ_ಠ
 (def pwd (str (System/getProperty "user.dir") "/"))
 (def home (str (System/getProperty "user.home") "/"))
 (def mba-config (str home ".mba/"))
 (def mba-home (str mba-config ".mba-home/"))
-
-;; ಠ_ಠ
 (def resources
-  (str (fs/absolutize (fs/normalize (fs/path (fs/real-path *file*) "../../resources")))))
+  (-> *file*
+       io/file
+       .getParentFile
+       .getParent
+       (io/file "resources")
+       str))
 
 ;; * data
 (def reverse-proxies {:haproxy
@@ -467,11 +471,15 @@
     :validate [#{:postgres :postgresql :mysql :mongo :mariadb-latest :vertica} ]]])
 
 
-(defn- ensure-dirs
-  []
-  (when (not (.exists (io/file mba-home)))
-    (fs/create-dirs mba-home)
-    (fs/copy-tree (str resources "/home/") mba-home)))
+
+(defn copy-file [source-path dest-path]
+  (io/copy (io/file source-path) (io/file dest-path)))
+
+(defn- ensure-dirs []
+  (when-not (.exists (io/file mba-home))
+    (.mkdirs (io/file mba-home))
+    (copy-file (str resources "/home/.bashrc") (str mba-home "/.bashrc"))
+    (copy-file (str resources "/home/.bash_profile") (str mba-home "/.bash_profile"))))
 
 (defn -main
   "fubar"
