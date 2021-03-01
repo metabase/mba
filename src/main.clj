@@ -290,7 +290,6 @@
         docker-compose-yml-file!)))
 
 ;;; * Tasks
-
 (defmulti task first)
 
 (defmethod task :default
@@ -391,12 +390,11 @@
   [summary]
   (let [next-piece [["##  " " ## " " ## " "####" " #  " "####" "####"]
                     [" ## " " ## " "##  " "    " "### " "#   " "   #"]]
-        p1 (rand-int (count (first next-piece)))
-        r1 (get (first next-piece) p1)
-        r2 (get (second next-piece) p1)
-        p2 (rand-int (count (first next-piece)))
-        n1 (get (first next-piece) p2)
-        n2 (get (second next-piece) p2)]
+        n-pieces (count (first next-piece))
+        p1 (rand-int n-pieces)
+        p2 (rand-int n-pieces)
+        [r1 r2] (map #(get (% next-piece) p1) [first second])
+        [n1 n2] (map #(get (% next-piece) p2) [first second])]
     (println "            MetaBaseAssembler: ")
     (println "")
     (println "              *          * ")
