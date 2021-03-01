@@ -16,13 +16,21 @@
 (def home (str (System/getProperty "user.home") "/"))
 (def mba-config (str home ".mba/"))
 (def mba-home (str mba-config ".mba-home/"))
+
+;; (def resources
+;;   (-> *file*
+;;        io/file
+;;        .getParentFile
+;;        .getParent
+;;        (io/file "resources")
+;;        str))
+
 (def resources
-  (-> *file*
-       io/file
-       .getParentFile
-       .getParent
-       (io/file "resources")
-       str))
+  (str (str/trim-newline (:out
+                          (sh/sh "dirname"
+                                 (str/trim-newline
+                                  (:out (sh/sh "realpath" (str *file*)))))))  "/../resources/"))
+
 
 ;; * data
 (def reverse-proxies {:haproxy
