@@ -188,12 +188,15 @@
                       {:image "maildev/maildev"
                        ;; :ports ["1080:80", "1025:25"]
                        :ports ["80", "25"]
-                       :labels {"com.metabase.d" true}}
+                       :labels {"com.metabase.d" true}
+                       :networks ["d"]
+                       }
 
                       :metabase
                       {:build {:context (str pwd ".devcontainer/") ; ?! maybe unify to
                                :dockerfile "Dockerfile"}
 
+                       :depends_on ["maildev"]
                        :working_dir "/app/source"
                        :volumes [(str mba-home ":/root/") ; home
                                  (str (System/getProperty "user.dir") ":/app/source/") ; app source
@@ -246,6 +249,7 @@
     (-> config
         (assoc-in [:services :metabase :environment :MB_DB_CONNECTION_URI] (kw-name all-dbs))
         (assoc-in [:services kw-name] (kw-name databases))
+        (update-in [:services :metabase :depends_on] conj name)
         (cond-> version (assoc-in [:services kw-name :image] app-db)))))
 
 (defn- prepare-dc [opts]
