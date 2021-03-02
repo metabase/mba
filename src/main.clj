@@ -454,7 +454,7 @@
 
 (def cli-options
   "https://github.com/clojure/tools.cli#example-usage"
-  [["-E" "--enterprise"
+  [["-E" "--enterprise ENTERPRISE"
     "Enterprise edition"
     :default nil
     :validate [#{"true" "false"}]]
