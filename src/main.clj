@@ -393,8 +393,14 @@
 (defmethod task :graph
   [[_ opts]]
   (prepare-dc opts)
-  (sh/sh  "docker" "run" "--rm" "--name" "dcv" "-v" "/tmp/:/input" "pmsipilot/docker-compose-viz" "render" "-m" "image" (str/replace (.getPath my-temp-file) "/tmp/" "") "--force")
-  (sh/sh "firefox" "/tmp/docker-compose.png"))
+
+  (let [opener
+        (if (re-find #"Linux"
+                     (System/getProperty "os.name"))
+          "xdg-open"
+          "open")]
+    (sh/sh  "docker" "run" "--rm" "--name" "dcv" "-v" "/tmp/:/input" "pmsipilot/docker-compose-viz" "render" "-m" "image" (str/replace (.getPath my-temp-file) "/tmp/" "") "--force")
+    (sh/sh opener "/tmp/docker-compose.png")))
 
 (defmethod task :install-dep
   [[_ opts]]
