@@ -52,7 +52,12 @@
      --app-db postgres logs -- -f=
 
 ** Different configurations
-   =mba --help= will show the options accepted by mba.
+   - =mba --help= will show the options accepted by mba.
+   - =cd ~/src/metabase; mba -M ./=
+   - =mba -M file:~/src/metabase/=
+   - =mba -M file:~/src/metabase/=
+   - =mba -M docker:metabase/metabase:v0.37=
+   - =mba -M git:release-=
    - =mba --app-db mariadb-latest --data-db=postgres=
    - =mba --app-db mariadb-latest --data-db=postgres --proxy=nginx=
 
