@@ -1,7 +1,7 @@
 * basics
 
 ** Dependencies
-   - docker-compose
+   - docker & docker-compose
    - babashka (https://github.com/babashka/babashka/)  2.9 or more.
 
 
@@ -9,8 +9,8 @@
    - install babashka
    - install docker && docker-compose
    - git clone https://github.com/kidd/mba
-   - ln -s mba/src/main.clj ~/bin/mba
-   - mba --help
+   - ln -s mba/src/main.clj ~/bin/mba || can work without the symlink 
+   - mba --help or ./mba/src/main.clj --help
 
 ** Usage
    mba wraps docker-compose, and all commands it does not understand
@@ -74,9 +74,17 @@
     lein repl :headless :port 7888
 
 ** EE flags
+add an "--enterprise true" to the command and it will launch an Enterprise version (you need to hardcode the token in the main.clj file still)
+
+** How to see actual Metabase queries sent to the database
+./src/main.clj --app-db postgres --data-db postgres --enterprise true logs -- --tail=100 -f postgres | grep -A 5 "queryHash"
 
 ** cypress
 
+** graph
+
+** how to see what is the actual compose being built
+./src/main.clj --data-db postgres --app-db postgres config | less
 
 https://github.com/microsoft/vscode-dev-containers/tree/master/containers/java-8
 
