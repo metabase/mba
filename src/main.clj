@@ -462,7 +462,9 @@
   "https://github.com/clojure/tools.cli#example-usage"
   [["-M" "--mb METABASE"
     :default nil
-    :parse-fn (fn [arg] (str/split arg #":") )
+    :parse-fn (fn [arg]
+                (let [[prot where] (str/split arg #":" 2)]
+                  (if (seq where) [prot where] ["file" prot])))
     :validate [#(re-find #"(dockerhub|docker|github|git|gh|file)" (first %)) second]]
    ["-h" "--help" "HALP!"]
    ["-P" "--publish PUBLISH"
