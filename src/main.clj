@@ -191,15 +191,10 @@
                        :labels {"com.metabase.d" true}
                        :networks ["d"]
                        }
-
                       :metabase
-                      {:build {:context (str pwd ".devcontainer/") ; ?! maybe unify to
-                               :dockerfile "Dockerfile"}
-
-                       :depends_on ["maildev"]
+                      {:depends_on ["maildev"]
                        :working_dir "/app/source"
                        :volumes [(str mba-home ":/root/") ; home
-                                 (str (System/getProperty "user.dir") ":/app/source/") ; app source
                                  "h2vol:/app/source/metabase-h2-db/"
                                  ;; XXX: if you change this, 00-restore-env.sh
                                  ;; will be the one from the docker
@@ -209,7 +204,10 @@
                                  ;; (str resources "/base/profile.sh:/etc/profile.d/99-profile.sh")
                                  (str resources "/base/profile.sh:/etc/profile.d/00-restore-env.sh")]
                        :environment
-                       {
+                       {:ENABLE_ENTERPRISE_EDITION "true"
+                        :HAS_ENTERPRISE_TOKEN "true"
+                        :ENTERPRISE_TOKEN  "ENV ENT_TOKEN"
+                        :MB_EDITION "ee"
                         ;; :JAVA_OPTS "-Dlog4j.configurationFile=file:///metabase.db/log4j2.xml"
                         :MBA_PREFIX "MB"
                         :MBA_DB_CLI "lein run h2"
@@ -257,7 +255,10 @@
         data-db (keyword (:data-db opts))
         proxy (keyword (:proxy opts))
         publish (:publish opts)
-        prefix (:prefix opts)]
+        prefix (:prefix opts)
+        [protocol metabase] (:mb opts)
+        metabase (str/replace metabase #"~/" (str (System/getProperty "user.home") "/"))]
+
     (-> (cond-> (assemble-app-db docker-compose app-db)
 
           ;; data-db
@@ -269,22 +270,25 @@
           (assoc-in [:networks :d] {:name (:network opts)})
 
           ;; dev / release
-          (not (.exists (io/file (str (System/getProperty "user.dir") "/app.json"))))
+          ;; (not (.exists (io/file (str (System/getProperty "user.dir") "/app.json"))))
+
+          (= protocol "docker")
           (->
-           (assoc-in [:services :metabase :image]
-                     (str "metabase/metabase"
-                          (if (:enterprise opts) "-enterprise" ""))) ; not very cool entanglement
+           (assoc-in [:services :metabase :image] metabase)
            (update-in [:services :metabase] dissoc :command)
            (update-in [:services :metabase] dissoc :build))
 
-          ;; CE / EE
-          (not (nil? (:enterprise opts)))
-          (update-in [:services :metabase :environment]
-                     assoc
-                     :ENABLE_ENTERPRISE_EDITION "true"
-                     :HAS_ENTERPRISE_TOKEN "true"
-                     :ENTERPRISE_TOKEN  "ENV ENT_TOKEN"
-                     :MB_EDITION "ee")
+          (#{"gh" "github"} protocol)
+          (throw "NYI")
+
+          (and (#{"file"} protocol) ;(.exists (io/file (str metabase "/app.json")))
+               )
+          (->
+           (update-in [:services :metabase :volumes] conj
+                      (str (-> metabase io/file .getCanonicalPath ) ":/app/source/"))
+           (assoc-in [:services :metabase :build]
+                     {:context (str (-> metabase io/file .getCanonicalPath ) "/.devcontainer/") ; ?! maybe unify to
+                      :dockerfile "Dockerfile"}))
 
           ;; proxy?
           proxy
@@ -399,7 +403,9 @@
                      (System/getProperty "os.name"))
           "xdg-open"
           "open")]
-    (sh/sh  "docker" "run" "--rm" "--name" "dcv" "-v" "/tmp/:/input" "pmsipilot/docker-compose-viz" "render" "-m" "image" (str/replace (.getPath my-temp-file) "/tmp/" "") "--force")
+    (sh/sh  "docker" "run" "--rm" "--name" "dcv" "-v" "/tmp/:/input"
+            "pmsipilot/docker-compose-viz" "render" "-m" "image"
+            (str/replace (.getPath my-temp-file) "/tmp/" "") "--force")
     (sh/sh opener "/tmp/docker-compose.png")))
 
 (defmethod task :install-dep
@@ -454,10 +460,10 @@
 
 (def cli-options
   "https://github.com/clojure/tools.cli#example-usage"
-  [["-E" "--enterprise ENTERPRISE"
-    "Enterprise edition"
+  [["-M" "--mb METABASE"
     :default nil
-    :validate [#{"true" "false"}]]
+    :parse-fn (fn [arg] (str/split arg #":") )
+    :validate [#(re-find #"(dockerhub|docker|github|git|gh|file)" (first %)) second]]
    ["-h" "--help" "HALP!"]
    ["-P" "--publish PUBLISH"
     "publish ports"
@@ -510,6 +516,7 @@
         [cmd & rest] arguments]
     (when (or (= cmd "help")
               (:help options))
+      (prn options)
       (task [:help summary])
       (System/exit 0))
     (when (seq errors)
