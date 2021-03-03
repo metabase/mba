@@ -272,7 +272,7 @@
           ;; dev / release
           ;; (not (.exists (io/file (str (System/getProperty "user.dir") "/app.json"))))
 
-          (= protocol "docker")
+          (#{"docker" "dockerhub"} protocol)
           (->
            (assoc-in [:services :metabase :image] metabase)
            (update-in [:services :metabase] dissoc :command)
@@ -281,8 +281,7 @@
           (#{"gh" "github"} protocol)
           (throw "NYI")
 
-          (and (#{"file"} protocol) ;(.exists (io/file (str metabase "/app.json")))
-               )
+          (#{"file"} protocol)
           (->
            (update-in [:services :metabase :volumes] conj
                       (str (-> metabase io/file .getCanonicalPath ) ":/app/source/"))
@@ -461,7 +460,9 @@
 (def cli-options
   "https://github.com/clojure/tools.cli#example-usage"
   [["-M" "--mb METABASE"
-    :default nil
+    :default (if (.exists (io/file (str pwd "/app.json")))
+               ["file" "./"]
+               ["docker" "metabase/metabase"])
     :parse-fn (fn [arg]
                 (let [[prot where] (str/split arg #":" 2)]
                   (if (seq where) [prot where] ["file" prot])))
