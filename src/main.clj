@@ -309,7 +309,7 @@
 (defmethod task :default
   [[cmd opts args]]
   (prepare-dc opts)
-  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) ~@args])
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args])
       (.inheritIO)
       (.start)
       (.waitFor))
@@ -336,11 +336,11 @@
      (take-while identity (repeatedly #(.readLine in#)))))
 
 (defn- exec-into
-  [container & cmds]
+  [opts container & cmds]
   ;; https://github.com/babashka/babashka/blob/master/examples/process_builder.clj
   ;; https://github.com/babashka/babashka/issues/299
   ;; https://book.babashka.org/#child_processes
-  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "exec" ~container "sh" "-l" "-i" "-c" ~@cmds])
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" ~container "sh" "-l" "-i" "-c" ~@cmds])
       (.inheritIO)
       (.start)
       (.waitFor)))
@@ -356,7 +356,7 @@
 (defmethod task :up
   [[_ opts args]]
   (prepare-dc opts)
-  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "up" "-d"])
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d"])
       (.inheritIO)
       (.start)
       (.waitFor))
@@ -367,12 +367,13 @@
   [[_ opts]]
   (prepare-dc opts)
   ;; for now we specialcase this
-  ;; because (exec-into "metabase" "bash" "-l" "-i") wouldn't trigger
+  ;; because (exec-into opts "metabase" "bash" "-l" "-i") wouldn't trigger
   ;; the .profile.
 
   ;; should add "-l" , but it makes java 15 the default java, which we
   ;; don't want because it fails to run
-  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l" "-i"])
+  (println opts)
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l" "-i"])
       (.inheritIO)
       (.inheritIO)
       (.start)
@@ -381,7 +382,7 @@
 (defmethod task :go
   [[_ opts]]
   (prepare-dc opts)
-  (exec-into "metabase" "eval $MBA_CLI" ))
+  (exec-into opts "metabase" "eval $MBA_CLI" ))
 
 (defmethod task :dbconsole
   ;; EACH possible db container should add an env var MBA_DB_CLI that
@@ -390,7 +391,7 @@
   (let [app-db (:app-db opts)
         app-db-service (first (str/split app-db #":"))]
     (prepare-dc opts)
-    (exec-into app-db-service "$MBA_DB_CLI")))
+    (exec-into opts app-db-service "$MBA_DB_CLI")))
 
 (defmethod task :graph
   [[_ opts]]
@@ -461,14 +462,11 @@
   [["-M" "--mb METABASE"
     :default (if (.exists (io/file (str pwd "/app.json")))
                ["file" "./"]
-               ;; "file:./"
-               ["docker" "metabase/metabase-enterprise"]
-               ;; "docker:metabase/metabase-enterprise"
-               )
+               ["docker" "metabase/metabase-enterprise"])
     :parse-fn (fn [arg]
                 (let [[prot where] (str/split arg #":" 2)]
                   (if (seq where) [prot where] ["file" prot])))
-    :validate [#(re-find #"(dockerhub|docker|github|git|gh|file)" (first %)) second]]
+    :validate [#(re-find #"(dockerhub|docker|github|git|gh|file|dir)" (first %)) second]]
    ["-h" "--help" "HALP!"]
    ["-P" "--publish PUBLISH"
     "publish ports"
@@ -483,7 +481,7 @@
    ;;             ;;    (remove #{(second (re-find #"^(\d+):\d+$" x))} acc)
    ;;             ;;    x))
    ;;  ]
-   ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "d"]
+   ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "mb"]
    ["-n" "--network NETWORK" "network name" :default nil]
    ["-t" "--tag TAG" "metabase/metabase:v0.37.9  or path-to-source"
     :default nil
@@ -502,8 +500,6 @@
     :default nil
     :parse-fn (comp keyword str/lower-case)
     :validate [#{:postgres :postgresql :mysql :mongo :mariadb-latest :vertica} ]]])
-
-
 
 (defn copy-file [source-path dest-path]
   (io/copy (io/file source-path) (io/file dest-path)))
