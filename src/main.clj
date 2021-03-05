@@ -31,7 +31,6 @@
                                  (str/trim-newline
                                   (:out (sh/sh "realpath" (str *file*)))))))  "/../resources/"))
 
-
 ;; * data
 (def reverse-proxies {:haproxy
                       {:image "haproxy:2.3.4-alpine"
@@ -462,7 +461,10 @@
   [["-M" "--mb METABASE"
     :default (if (.exists (io/file (str pwd "/app.json")))
                ["file" "./"]
-               ["docker" "metabase/metabase-enterprise"])
+               ;; "file:./"
+               ["docker" "metabase/metabase-enterprise"]
+               ;; "docker:metabase/metabase-enterprise"
+               )
     :parse-fn (fn [arg]
                 (let [[prot where] (str/split arg #":" 2)]
                   (if (seq where) [prot where] ["file" prot])))
