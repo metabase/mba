@@ -453,7 +453,7 @@
     (println "")
     (println "Emacs config:")
     (prn '(setq cider-path-translations '(("/app/source" . "~/workspace/metabase")
-                                          ("/root/.m2/" . "~/.mba-home/.m2/"))))))
+                                          ("/root/.m2/" . "~/.mba/.mba-home/.m2/"))))))
 
 ;; * CLI
 
