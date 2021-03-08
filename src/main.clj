@@ -493,13 +493,13 @@
     :parse-fn (comp keyword str/lower-case)
     :validate [#{:nginx :envoy :haproxy}]]
    ["-d" "--app-db APP-DB"
-    :default "h2"
+    :default "postgres"
     :parse-fn str/lower-case
     :validate [#(#{:h2 :postgres :postgresql :mysql :mariadb-latest} (keyword (re-find #"^[^:]*" %)))]]
    ["-D" "--data-db DATA-DB"
     :default nil
     :parse-fn (comp keyword str/lower-case)
-    :validate [#{:postgres :postgresql :mysql :mongo :mariadb-latest :vertica} ]]])
+    :validate [#{:postgres :postgresql :mysql :mongodb :mariadb-latest :vertica} ]]])
 
 (defn copy-file [source-path dest-path]
   (io/copy (io/file source-path) (io/file dest-path)))
