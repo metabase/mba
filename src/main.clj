@@ -31,7 +31,6 @@
                                  (str/trim-newline
                                   (:out (sh/sh "realpath" (str *file*)))))))  "/../resources/"))
 
-
 ;; * data
 (def reverse-proxies {:haproxy
                       {:image "haproxy:2.3.4-alpine"
@@ -191,15 +190,10 @@
                        :labels {"com.metabase.d" true}
                        :networks ["d"]
                        }
-
                       :metabase
-                      {:build {:context (str pwd ".devcontainer/") ; ?! maybe unify to
-                               :dockerfile "Dockerfile"}
-
-                       :depends_on ["maildev"]
+                      {:depends_on ["maildev"]
                        :working_dir "/app/source"
                        :volumes [(str mba-home ":/root/") ; home
-                                 (str (System/getProperty "user.dir") ":/app/source/") ; app source
                                  "h2vol:/app/source/metabase-h2-db/"
                                  ;; XXX: if you change this, 00-restore-env.sh
                                  ;; will be the one from the docker
@@ -209,7 +203,10 @@
                                  ;; (str resources "/base/profile.sh:/etc/profile.d/99-profile.sh")
                                  (str resources "/base/profile.sh:/etc/profile.d/00-restore-env.sh")]
                        :environment
-                       {
+                       {:ENABLE_ENTERPRISE_EDITION "true"
+                        :HAS_ENTERPRISE_TOKEN "true"
+                        :ENTERPRISE_TOKEN  "ENV ENT_TOKEN"
+                        :MB_EDITION "ee"
                         ;; :JAVA_OPTS "-Dlog4j.configurationFile=file:///metabase.db/log4j2.xml"
                         :MBA_PREFIX "MB"
                         :MBA_DB_CLI "lein run h2"
@@ -252,12 +249,24 @@
         (update-in [:services :metabase :depends_on] conj name)
         (cond-> version (assoc-in [:services kw-name :image] app-db)))))
 
+(defn- inject-envs [docker-compose envs]
+  (reduce (fn [acc x]
+            (let [[mvar mval] (str/split x #"=")]
+              (update-in acc [:services :metabase :environment]
+                         conj
+                         (vector (keyword (str mvar)) (str mval)))))
+          docker-compose envs))
+
 (defn- prepare-dc [opts]
   (let [app-db (:app-db opts)
         data-db (keyword (:data-db opts))
         proxy (keyword (:proxy opts))
         publish (:publish opts)
-        prefix (:prefix opts)]
+        prefix (:prefix opts)
+        env (:env opts)
+        [protocol metabase] (:mb opts)
+        metabase (str/replace metabase #"~/" (str (System/getProperty "user.home") "/"))]
+
     (-> (cond-> (assemble-app-db docker-compose app-db)
 
           ;; data-db
@@ -269,22 +278,24 @@
           (assoc-in [:networks :d] {:name (:network opts)})
 
           ;; dev / release
-          (not (.exists (io/file (str (System/getProperty "user.dir") "/app.json"))))
+          ;; (not (.exists (io/file (str (System/getProperty "user.dir") "/app.json"))))
+
+          (#{"docker" "dockerhub"} protocol)
           (->
-           (assoc-in [:services :metabase :image]
-                     (str "metabase/metabase"
-                          (if (:enterprise opts) "-enterprise" ""))) ; not very cool entanglement
+           (assoc-in [:services :metabase :image] metabase)
            (update-in [:services :metabase] dissoc :command)
            (update-in [:services :metabase] dissoc :build))
 
-          ;; CE / EE
-          (not (nil? (:enterprise opts)))
-          (update-in [:services :metabase :environment]
-                     assoc
-                     :ENABLE_ENTERPRISE_EDITION "true"
-                     :HAS_ENTERPRISE_TOKEN "true"
-                     :ENTERPRISE_TOKEN  "ENV ENT_TOKEN"
-                     :MB_EDITION "ee")
+          (#{"gh" "github"} protocol)
+          (throw "NYI")
+
+          (#{"file"} protocol)
+          (->
+           (update-in [:services :metabase :volumes] conj
+                      (str (-> metabase io/file .getCanonicalPath ) ":/app/source/"))
+           (assoc-in [:services :metabase :build]
+                     {:context (str (-> metabase io/file .getCanonicalPath ) "/.devcontainer/") ; ?! maybe unify to
+                      :dockerfile "Dockerfile"}))
 
           ;; proxy?
           proxy
@@ -294,6 +305,8 @@
           (assoc-in [:services :metabase :ports]
                     ["3000:3000" "8080:8080" "7888:7888"])
 
+          (seq env)
+          (inject-envs env)
           ;;prefix
           ;;(update :services #(update-values % assoc-in [:environment :prefix] prefix))
           )
@@ -307,7 +320,7 @@
 (defmethod task :default
   [[cmd opts args]]
   (prepare-dc opts)
-  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) ~@args])
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args])
       (.inheritIO)
       (.start)
       (.waitFor))
@@ -334,11 +347,11 @@
      (take-while identity (repeatedly #(.readLine in#)))))
 
 (defn- exec-into
-  [container & cmds]
+  [opts container & cmds]
   ;; https://github.com/babashka/babashka/blob/master/examples/process_builder.clj
   ;; https://github.com/babashka/babashka/issues/299
   ;; https://book.babashka.org/#child_processes
-  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "exec" ~container "sh" "-l" "-i" "-c" ~@cmds])
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" ~container "sh" "-l" "-i" "-c" ~@cmds])
       (.inheritIO)
       (.start)
       (.waitFor)))
@@ -354,7 +367,7 @@
 (defmethod task :up
   [[_ opts args]]
   (prepare-dc opts)
-  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "up" "-d"])
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d" ~@args])
       (.inheritIO)
       (.start)
       (.waitFor))
@@ -365,12 +378,13 @@
   [[_ opts]]
   (prepare-dc opts)
   ;; for now we specialcase this
-  ;; because (exec-into "metabase" "bash" "-l" "-i") wouldn't trigger
+  ;; because (exec-into opts "metabase" "bash" "-l" "-i") wouldn't trigger
   ;; the .profile.
 
   ;; should add "-l" , but it makes java 15 the default java, which we
   ;; don't want because it fails to run
-  (-> (ProcessBuilder. `["docker-compose" "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l" "-i"])
+  (println opts)
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l" "-i"])
       (.inheritIO)
       (.inheritIO)
       (.start)
@@ -379,7 +393,7 @@
 (defmethod task :go
   [[_ opts]]
   (prepare-dc opts)
-  (exec-into "metabase" "eval $MBA_CLI" ))
+  (exec-into opts "metabase" "eval $MBA_CLI" ))
 
 (defmethod task :dbconsole
   ;; EACH possible db container should add an env var MBA_DB_CLI that
@@ -388,7 +402,7 @@
   (let [app-db (:app-db opts)
         app-db-service (first (str/split app-db #":"))]
     (prepare-dc opts)
-    (exec-into app-db-service "$MBA_DB_CLI")))
+    (exec-into opts app-db-service "$MBA_DB_CLI")))
 
 (defmethod task :graph
   [[_ opts]]
@@ -399,7 +413,9 @@
                      (System/getProperty "os.name"))
           "xdg-open"
           "open")]
-    (sh/sh  "docker" "run" "--rm" "--name" "dcv" "-v" "/tmp/:/input" "pmsipilot/docker-compose-viz" "render" "-m" "image" (str/replace (.getPath my-temp-file) "/tmp/" "") "--force")
+    (sh/sh  "docker" "run" "--rm" "--name" "dcv" "-v" "/tmp/:/input"
+            "pmsipilot/docker-compose-viz" "render" "-m" "image"
+            (str/replace (.getPath my-temp-file) "/tmp/" "") "--force")
     (sh/sh opener "/tmp/docker-compose.png")))
 
 (defmethod task :install-dep
@@ -448,16 +464,20 @@
     (println "")
     (println "Emacs config:")
     (prn '(setq cider-path-translations '(("/app/source" . "~/workspace/metabase")
-                                          ("/root/.m2/" . "~/.mba-home/.m2/"))))))
+                                          ("/root/.m2/" . "~/.mba/.mba-home/.m2/"))))))
 
 ;; * CLI
 
 (def cli-options
   "https://github.com/clojure/tools.cli#example-usage"
-  [["-E" "--enterprise ENTERPRISE"
-    "Enterprise edition"
-    :default nil
-    :validate [#{"true" "false"}]]
+  [["-M" "--mb METABASE"
+    :default (if (.exists (io/file (str pwd "/app.json")))
+               ["file" "./"]
+               ["docker" "metabase/metabase-enterprise"])
+    :parse-fn (fn [arg]
+                (let [[prot where] (str/split arg #":" 2)]
+                  (if (seq where) [prot where] ["file" prot])))
+    :validate [#(re-find #"(dockerhub|docker|github|git|gh|file|dir)" (first %)) second]]
    ["-h" "--help" "HALP!"]
    ["-P" "--publish PUBLISH"
     "publish ports"
@@ -472,27 +492,29 @@
    ;;             ;;    (remove #{(second (re-find #"^(\d+):\d+$" x))} acc)
    ;;             ;;    x))
    ;;  ]
-   ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "d"]
+   ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "mb"]
    ["-n" "--network NETWORK" "network name" :default nil]
    ["-t" "--tag TAG" "metabase/metabase:v0.37.9  or path-to-source"
     :default nil
     :validate [#(or (.exists (io/file %))
                     (re-find #"\w+/\w+:?.*" %))]]
-
+   ["-e" "--env ENV" "environment vars to pass along"
+    :default []
+    ;; :multi true
+    :update-fn conj
+    ]
    [nil "--proxy proxy-type" "use reverse proxy"
     :default nil
     :parse-fn (comp keyword str/lower-case)
     :validate [#{:nginx :envoy :haproxy}]]
    ["-d" "--app-db APP-DB"
-    :default "h2"
+    :default "postgres"
     :parse-fn str/lower-case
     :validate [#(#{:h2 :postgres :postgresql :mysql :mariadb-latest} (keyword (re-find #"^[^:]*" %)))]]
    ["-D" "--data-db DATA-DB"
     :default nil
     :parse-fn (comp keyword str/lower-case)
-    :validate [#{:postgres :postgresql :mysql :mongo :mariadb-latest :vertica} ]]])
-
-
+    :validate [#{:postgres :postgresql :mysql :mongodb :mariadb-latest :vertica} ]]])
 
 (defn copy-file [source-path dest-path]
   (io/copy (io/file source-path) (io/file dest-path)))
@@ -510,6 +532,7 @@
         [cmd & rest] arguments]
     (when (or (= cmd "help")
               (:help options))
+      (prn options)
       (task [:help summary])
       (System/exit 0))
     (when (seq errors)

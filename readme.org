@@ -52,7 +52,12 @@
      --app-db postgres logs -- -f=
 
 ** Different configurations
-   =mba --help= will show the options accepted by mba.
+   - =mba --help= will show the options accepted by mba.
+   - =cd ~/src/metabase; mba -M ./=
+   - =mba -M file:~/src/metabase/=
+   - =mba -M file:~/src/metabase/=
+   - =mba -M docker:metabase/metabase:v0.37=
+   - =mba -M git:release-=
    - =mba --app-db mariadb-latest --data-db=postgres=
    - =mba --app-db mariadb-latest --data-db=postgres --proxy=nginx=
 
@@ -60,6 +65,29 @@
    by default, the stack will share port 3000, 8080 and 7888
    (lein). if you're using a proxy, it won't share them, and will only
    share 8080 as the main entrypoint.
+
+** networks
+   By default it will create a new unnamed network, but we can tell
+   mba to create a named network with =-n foo=. This and =docker run=
+   allows us to run different mb versions in the same environment to
+   test upgrades and the like.
+
+   #+begin_src bash
+     # this will start the "main" one
+     mba --mb docker:metabase/metabase:v0.37.9 --app-db postgres -n n1 up
+     # attach a new container to the network. Can run migrations.
+     # or hit http://metabase:3000/api/session/properties
+     mba --mb file:~/workspace/metabase --app-db postgres -n n1 run metabase bash
+   #+end_src
+
+   Note: you can't =run bash= on a docker image that we provide (see
+   https://github.com/metabase/metabase/issues/14528), but you can run
+   normally, and then exec into it and run sh. That works ok.
+
+* troubleshooting
+** I'm using default or a non versioned docker:* and mb is using an old version
+   Use =mba --mb docker:metabase/metabase:v0.37.9 up= or use the
+   =pull= command: =mba --mb docker:metabase/metabase pull=
 
 * requirements to make it work as a dev env
 
