@@ -367,7 +367,7 @@
 (defmethod task :up
   [[_ opts args]]
   (prepare-dc opts)
-  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d" ~@args])
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d"])
       (.inheritIO)
       (.start)
       (.waitFor))
