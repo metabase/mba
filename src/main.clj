@@ -249,12 +249,21 @@
         (update-in [:services :metabase :depends_on] conj name)
         (cond-> version (assoc-in [:services kw-name :image] app-db)))))
 
+(defn- inject-envs [docker-compose envs]
+  (reduce (fn [acc x]
+            (let [[mvar mval] (str/split x #"=")]
+              (update-in acc [:services :metabase :environment]
+                         conj
+                         (vector (keyword (str mvar)) (str mval)))))
+          docker-compose envs))
+
 (defn- prepare-dc [opts]
   (let [app-db (:app-db opts)
         data-db (keyword (:data-db opts))
         proxy (keyword (:proxy opts))
         publish (:publish opts)
         prefix (:prefix opts)
+        env (:env opts)
         [protocol metabase] (:mb opts)
         metabase (str/replace metabase #"~/" (str (System/getProperty "user.home") "/"))]
 
@@ -296,6 +305,8 @@
           (assoc-in [:services :metabase :ports]
                     ["3000:3000" "8080:8080" "7888:7888"])
 
+          (seq env)
+          (inject-envs env)
           ;;prefix
           ;;(update :services #(update-values % assoc-in [:environment :prefix] prefix))
           )
@@ -356,7 +367,7 @@
 (defmethod task :up
   [[_ opts args]]
   (prepare-dc opts)
-  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d"])
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d" ~@args])
       (.inheritIO)
       (.start)
       (.waitFor))
@@ -487,7 +498,11 @@
     :default nil
     :validate [#(or (.exists (io/file %))
                     (re-find #"\w+/\w+:?.*" %))]]
-
+   ["-e" "--env ENV" "environment vars to pass along"
+    :default []
+    ;; :multi true
+    :update-fn conj
+    ]
    [nil "--proxy proxy-type" "use reverse proxy"
     :default nil
     :parse-fn (comp keyword str/lower-case)
