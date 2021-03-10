@@ -497,9 +497,8 @@
                     (re-find #"\w+/\w+:?.*" %))]]
    ["-e" "--env ENV" "environment vars to pass along"
     :default []
-    ;; :multi true
-    :update-fn conj
-    ]
+    :multi true
+    :update-fn conj]
    [nil "--proxy proxy-type" "use reverse proxy"
     :default nil
     :parse-fn (comp keyword str/lower-case)
