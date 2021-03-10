@@ -1,0 +1,122 @@
+#+options: ':nil *:t -:t ::t <:t H:3 \n:nil ^:nil arch:headline
+#+options: author:t broken-links:nil c:nil creator:nil
+#+options: d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t num:t
+#+options: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
+#+options: timestamp:t title:t toc:t todo:t |:t
+#+options: toc:nil num:nil
+#+title: MetaBase Assembler
+#+date: <2021-03-08 Mon>
+#+author: Raimon Grau
+#+email: rgrau@Raixos
+#+language: en
+#+select_tags: export
+#+exclude_tags: noexport
+#+creator: Emacs 28.0.50 (Org mode 9.4.4)
+#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js
+
+* MBA
+
+  - Dockerized development environment
+  - Starting from .devcontainer/Dockerfile
+  - Adding databases to the mix with docker compose
+  - So it's basically a wrapper around our dev dockerfile and
+    docker-compose.
+  - But it can help with other stuff too (hopefully)
+
+* Usage
+  #+begin_src bash
+    mba up       # starts all containers and connects them
+    mba shell    # opens a shell to the metabase container
+    mba dbconsle # opens a sql to the app-db container
+    mba down     # tearsdown everything
+  #+end_src
+
+* Containers
+  =mba up=
+  [[./mba-up.png]]
+  - Metabase
+  - app-db
+  - data-db
+  - maildev
+  - proxy?
+
+* Shell
+  =mba shell=
+  [[./mba-shell.png]]
+
+* dbconsole
+  =mba dbconsole=
+  [[./mba-dbconsole.png]]
+
+  [[./mba-dbconsole-mariadb.png]]
+
+* Options
+
+  #+begin_src bash
+    mba --mb X --app-db Y --data-db Z --proxy Q up
+    mba --prefix P --network N up
+
+    mba --mb ~/src/metabase --app-db postgres --data-db mongo up
+  #+end_src
+
+* Mountpoints
+  Mounts every container's /root to a single directory on the host
+
+    #+begin_src bash
+      ~/.mba/.mba-home:/root
+      ~/src/metabase:/app/source
+    #+end_src
+
+* Ports
+  - 3000:3000
+  - 7888:7888
+  - 8080:8080
+  - 80?  (proxy)
+
+* Isolation
+  - publishing ports is optional
+  - you can have multiple metabase instances running at the same time
+  - allowing to test upgrades.
+
+* History and Configs
+  - configs for better debugging can be injected easily
+    - postgres pg_stat_statements
+    - more logs
+  - /root is shared between all containers.
+    - .psqlrc/.bashrc
+    - .bash_history
+    - pg_dump/pg_restore
+
+* repros?
+  - Running from source for dev
+  - test in isolation
+  - Use a published docker image:
+    =mba --mb docker:metabase/metabase-enterprise --app-db postgres=
+
+* Extra
+  mba builds docker-compose.ymls on-the-fly and uses docker-compose
+  under the hood, so everything docker-compose still applies
+
+    #+begin_src bash
+      mba --app-db postgres ps
+      mba --app-db postgres logs
+      mba --app-db postgres config
+    #+end_src
+
+* extra commands
+  =mba --app-db postgres graph=
+  [[./docker-compose-simple.png]]
+
+
+* The End
+  [[./slot-small.jpg]]
+
+* vars                                                             :noexport:
+#+ATTR_HTML: width="500px"
+#+ATTR_ORG: :width 500
+;; Local Variables:
+;; eval: (setq org-image-actual-width 100)
+;; eval: (setq org-image-actual-height 100)
+;; eval: (org-display-inline-images t t)
+;; eval: (setq org-image-actual-width nil)
+;; End:

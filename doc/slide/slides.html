@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>MetaBase Assembler</title>
+<meta name="author" content="(Raimon Grau)"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.css"/>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/theme/moon.css" id="theme"/>
+
+
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'https://cdn.jsdelivr.net/npm/reveal.js/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide"><h1 class="title">MetaBase Assembler</h1><h2 class="author">Raimon Grau</h2><h2 class="date">2021-03-08 Mon 00:00</h2><p class="date">Created: 2021-03-08 Mon 15:18</p>
+</section>
+
+<section>
+<section id="slide-org0000000">
+<h2 id="org0000000">MBA</h2>
+<ul>
+<li>Dockerized development environment</li>
+<li>Starting from .devcontainer/Dockerfile</li>
+<li>Adding databases to the mix with docker compose</li>
+<li>So it's basically a wrapper around our dev dockerfile and
+docker-compose.</li>
+<li>But it can help with other stuff too (hopefully)</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org0000001">
+<h2 id="org0000001">Usage</h2>
+<div class="org-src-container">
+
+<pre  class="src src-bash"><code trim>mba up       <span style="color: #5F7F5F;"># </span><span style="color: #7F9F7F;">starts all containers and connects them</span>
+mba shell    <span style="color: #5F7F5F;"># </span><span style="color: #7F9F7F;">opens a shell to the metabase container</span>
+mba dbconsle <span style="color: #5F7F5F;"># </span><span style="color: #7F9F7F;">opens a sql to the app-db container</span>
+mba down     <span style="color: #5F7F5F;"># </span><span style="color: #7F9F7F;">tearsdown everything</span>
+</code></pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org0000002">
+<h2 id="org0000002">Containers</h2>
+<p>
+<code>mba up</code>
+<img src="./mba-up.png" alt="mba-up.png" />
+</p>
+<ul>
+<li>Metabase</li>
+<li>app-db</li>
+<li>data-db</li>
+<li>maildev</li>
+<li>proxy?</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org0000003">
+<h2 id="org0000003">Shell</h2>
+<p>
+<code>mba shell</code>
+<img src="./mba-shell.png" alt="mba-shell.png" />
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-org0000004">
+<h2 id="org0000004">dbconsole</h2>
+<p>
+<code>mba dbconsole</code>
+<img src="./mba-dbconsole.png" alt="mba-dbconsole.png" />
+</p>
+
+
+<div id="org0000004" class="figure">
+<p><img src="./mba-dbconsole-mariadb.png" alt="mba-dbconsole-mariadb.png" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org0000005">
+<h2 id="org0000005">Options</h2>
+<div class="org-src-container">
+
+<pre  class="src src-bash"><code trim>mba --mb X --app-db Y --data-db Z --proxy Q up
+mba --mb X --app-db Y --data-db Z --proxy P shell
+
+mba --mb ~/src/metabase --app-db postgres --data-db mongo up
+</code></pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org0000006">
+<h2 id="org0000006">Mountpoints</h2>
+<p>
+Mounts every container's /root to a single directory on the host
+</p>
+
+<div class="org-src-container">
+
+<pre  class="src src-bash"><code trim>~/.mba/.mba-home:/root
+~/src/metabase:/app/source
+</code></pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org0000007">
+<h2 id="org0000007">Ports</h2>
+<ul>
+<li>3000:3000</li>
+<li>7888:7888</li>
+<li>8080:8080</li>
+<li>80?  (proxy)</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org0000008">
+<h2 id="org0000008">Isolation</h2>
+<ul>
+<li>publishing ports is optional</li>
+<li>you can have multiple metabase instances running at the same time</li>
+<li>allowing to test upgrades.</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org0000009">
+<h2 id="org0000009">History and Configs</h2>
+<ul>
+<li>configs for better debugging can be injected easily
+<ul>
+<li>postgres pg_stat_statements</li>
+<li>.psqlrc</li>
+<li>.bashrc</li>
+<li>.bash_history</li>
+
+</ul></li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org000000a">
+<h2 id="org000000a">repros?</h2>
+<ul>
+<li>Running from source for dev</li>
+<li>test in isolation</li>
+<li>Use a published docker image:
+<code>mba --mb docker:metabase/metabase-enterprise --app-db postgres</code></li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org000000b">
+<h2 id="org000000b">Extra</h2>
+<p>
+mba builds docker-compose.ymls on-the-fly and uses docker-compose
+under the hood, so everything docker-compose still applies
+</p>
+
+<div class="org-src-container">
+
+<pre  class="src src-bash"><code trim>mba --app-db postgres ps
+mba --app-db postgres logs
+mba --app-db postgres config
+</code></pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org000000c">
+<h2 id="org000000c">extra commands</h2>
+<p>
+<code>mba --app-db postgres graph</code>
+<img src="./docker-compose-simple.png" alt="docker-compose-simple.png" />
+</p>
+
+
+</section>
+</section>
+<section>
+<section id="slide-org000000d">
+<h2 id="org000000d">The End</h2>
+
+<div id="org000000d" class="figure">
+<p><img src="./slot-small.jpg" alt="slot-small.jpg" />
+</p>
+</div>
+</section>
+</section>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }]
+});
+
+
+</script>
+</body>
+</html>
