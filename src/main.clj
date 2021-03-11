@@ -38,7 +38,7 @@
                        :volumes
                        [(str resources "/stacks/reverse-proxies/haproxy/config/:/usr/local/etc/haproxy/:ro")
                         (str resources "/stacks/reverse-proxies/haproxy/log:/dev/log")]
-                       :networks ["d" "dp"]
+                       :networks ["mbanet" "mbanet2"]
                        :ports ["8080:80"]
                        :depends_on ["metabase"]
                        }
@@ -48,7 +48,7 @@
                        :volumes
                        [(str resources "/stacks/reverse-proxies/envoy/config/envoy.yaml:/etc/envoy/envoy.yaml")
                         (str resources "/stacks/reverse-proxies/envoy/logs:/var/log")]
-                       :networks ["d" "dp"]
+                       :networks ["mbanet" "mbanet2"]
                        :ports ["8080:80"]
                        :depends_on ["metabase"]
                        }
@@ -57,7 +57,7 @@
                        :hostname "nginx"
                        :volumes
                        [(str resources "/stacks/reverse-proxies/nginx/nginx.conf:/etc/nginx/conf.d/default.conf")]
-                       :networks ["d" "dp"]
+                       :networks ["mbanet" "mbanet2"]
                        :ports ["8080:80"]
                        :depends_on ["metabase"]}})
 
@@ -68,7 +68,7 @@
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
-                 :networks ["d"]
+                 :networks ["mbanet"]
                  :labels {"com.metabase.d" true}}
 
                 :mongodb
@@ -78,7 +78,7 @@
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
-                 :networks ["d"]
+                 :networks ["mbanet"]
                  :labels {"com.metabase.d" true}}
 
                 :mariadb-latest
@@ -92,7 +92,7 @@
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
-                 :networks ["d"]
+                 :networks ["mbanet"]
                  :labels {"com.metabase.d" true}}
 
                 :presto
@@ -101,7 +101,7 @@
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
-                 :networks ["d"]
+                 :networks ["mbanet"]
                  :labels {"com.metabase.d" true}}
 
                 :sparksql
@@ -110,7 +110,7 @@
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
-                 :networks ["d"]
+                 :networks ["mbanet"]
                  :labels {"com.metabase.d" true}}
 
                 :sqlserver
@@ -122,7 +122,7 @@
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
-                 :networks ["d"]
+                 :networks ["mbanet"]
                  :labels {"com.metabase.d" true}}
 
                 :vertica
@@ -134,7 +134,7 @@
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
-                 :networks ["d"]
+                 :networks ["mbanet"]
                  :labels {"com.metabase.d" true}}
 
                 :postgres
@@ -154,7 +154,7 @@
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
-                 :networks ["d"]
+                 :networks ["mbanet"]
                  :labels {"com.metabase.d" true}}
 
                 :mysql
@@ -165,7 +165,7 @@
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
-                 :networks ["d"]
+                 :networks ["mbanet"]
                  :labels {"com.metabase.d" true}}
 
                 :h2
@@ -180,7 +180,7 @@
                  }})
 
 (def docker-compose {:version "3.5"
-                     :networks {:d {} :dp {}}
+                     :networks {:mbanet {} :mbanet2 {}}
                      :volumes { :h2vol {}}
                      :services
                      {:maildev
@@ -188,7 +188,7 @@
                        ;; :ports ["1080:80", "1025:25"]
                        :ports ["80", "25"]
                        :labels {"com.metabase.d" true}
-                       :networks ["d"]
+                       :networks ["mbanet"]
                        }
                       :metabase
                       {:depends_on ["maildev"]
@@ -222,7 +222,7 @@
                        :restart "on-failure"
                        :command "tail -f /dev/null"
                        :ports ["3000" "8080" "7888"]
-                       :networks ["d" "dp"]
+                       :networks ["mbanet" "mbanet2"]
                        :labels {"com.metabase.d" true}}}})
 
 (def all-dbs {:postgres "jdbc:postgresql://postgres:5432/metabase?user=metauser&password=metapass"
