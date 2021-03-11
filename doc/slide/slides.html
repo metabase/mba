@@ -26,7 +26,7 @@
 <body>
 <div class="reveal">
 <div class="slides">
-<section id="sec-title-slide"><h1 class="title">MetaBase Assembler</h1><h2 class="author">Raimon Grau</h2><h2 class="date">2021-03-08 Mon 00:00</h2><p class="date">Created: 2021-03-08 Mon 15:18</p>
+<section id="sec-title-slide"><h1 class="title">MetaBase Assembler</h1><h2 class="author">Raimon Grau</h2><h2 class="date">2021-03-11 Thu 00:00</h2><p class="date">Created: 2021-03-11 Thu 08:48</p>
 </section>
 
 <section>
@@ -68,8 +68,8 @@ mba down     <span style="color: #5F7F5F;"># </span><span style="color: #7F9F7F;
 <ul>
 <li>Metabase</li>
 <li>app-db</li>
-<li>data-db</li>
 <li>maildev</li>
+<li>data-db?</li>
 <li>proxy?</li>
 
 </ul>
@@ -107,10 +107,12 @@ mba down     <span style="color: #5F7F5F;"># </span><span style="color: #7F9F7F;
 <h2 id="org0000005">Options</h2>
 <div class="org-src-container">
 
-<pre  class="src src-bash"><code trim>mba --mb X --app-db Y --data-db Z --proxy Q up
-mba --mb X --app-db Y --data-db Z --proxy P shell
+<pre  class="src src-bash"><code trim>mba --mb X --app-db Y --data-db Z --proxy Q <span style="color: #CC9393;">\</span>
+    --prefix P --network N --publish false <span style="color: #CC9393;">\</span>
+    --env <span style="color: #DFAF8F;">FOO</span>=bar up
 
-mba --mb ~/src/metabase --app-db postgres --data-db mongo up
+<span style="color: #5F7F5F;"># </span><span style="color: #7F9F7F;">default:</span>
+mba --mb ./ --app-db postgres --publish true
 </code></pre>
 </div>
 
@@ -125,8 +127,8 @@ Mounts every container's /root to a single directory on the host
 
 <div class="org-src-container">
 
-<pre  class="src src-bash"><code trim>~/.mba/.mba-home:/root
-~/src/metabase:/app/source
+<pre  class="src src-bash"><code trim>$(<span style="color: #DCDCCC; font-weight: bold;">pwd</span>):/app/source     <span style="color: #5F7F5F;"># </span><span style="color: #7F9F7F;">only MB container</span>
+~/.mba/.mba-home:/root <span style="color: #5F7F5F;"># </span><span style="color: #7F9F7F;">every container shares this "portal"</span>
 </code></pre>
 </div>
 
@@ -139,7 +141,7 @@ Mounts every container's /root to a single directory on the host
 <li>3000:3000</li>
 <li>7888:7888</li>
 <li>8080:8080</li>
-<li>80?  (proxy)</li>
+<li>8080:80?  (proxy)</li>
 
 </ul>
 
@@ -164,9 +166,14 @@ Mounts every container's /root to a single directory on the host
 <li>configs for better debugging can be injected easily
 <ul>
 <li>postgres pg_stat_statements</li>
-<li>.psqlrc</li>
-<li>.bashrc</li>
+<li>more logs</li>
+
+</ul></li>
+<li>/root is shared between all containers.
+<ul>
+<li>.psqlrc/.bashrc</li>
 <li>.bash_history</li>
+<li>pg_dump/pg_restore</li>
 
 </ul></li>
 
@@ -180,10 +187,13 @@ Mounts every container's /root to a single directory on the host
 <ul>
 <li>Running from source for dev</li>
 <li>test in isolation</li>
-<li>Use a published docker image:
-<code>mba --mb docker:metabase/metabase-enterprise --app-db postgres</code></li>
+<li>Use a published docker image:</li>
 
 </ul>
+
+<p>
+<code>mba --mb docker:metabase/metabase-enterprise --app-db postgres</code>
+</p>
 
 </section>
 </section>
@@ -218,12 +228,7 @@ mba --app-db postgres config
 </section>
 <section>
 <section id="slide-org000000d">
-<h2 id="org000000d">The End</h2>
-
-<div id="org000000d" class="figure">
-<p><img src="./slot-small.jpg" alt="slot-small.jpg" />
-</p>
-</div>
+<h2 id="org000000d">The Demo/End</h2>
 </section>
 </section>
 </div>

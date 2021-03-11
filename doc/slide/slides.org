@@ -5,9 +5,8 @@
 #+options: timestamp:t title:t toc:t todo:t |:t
 #+options: toc:nil num:nil
 #+title: MetaBase Assembler
-#+date: <2021-03-08 Mon>
+#+date: <2021-03-11 Thu>
 #+author: Raimon Grau
-#+email: rgrau@Raixos
 #+language: en
 #+select_tags: export
 #+exclude_tags: noexport
@@ -36,8 +35,8 @@
   [[./mba-up.png]]
   - Metabase
   - app-db
-  - data-db
   - maildev
+  - data-db?
   - proxy?
 
 * Shell
@@ -53,25 +52,27 @@
 * Options
 
   #+begin_src bash
-    mba --mb X --app-db Y --data-db Z --proxy Q up
-    mba --prefix P --network N up
+  mba --mb X --app-db Y --data-db Z --proxy Q \
+      --prefix P --network N --publish false \
+      --env FOO=bar up
 
-    mba --mb ~/src/metabase --app-db postgres --data-db mongo up
+  # default:
+  mba --mb ./ --app-db postgres --publish true
   #+end_src
 
 * Mountpoints
   Mounts every container's /root to a single directory on the host
 
     #+begin_src bash
-      ~/.mba/.mba-home:/root
-      ~/src/metabase:/app/source
+      $(pwd):/app/source     # only MB container
+      ~/.mba/.mba-home:/root # every container shares this "portal"
     #+end_src
 
 * Ports
   - 3000:3000
   - 7888:7888
   - 8080:8080
-  - 80?  (proxy)
+  - 8080:80?  (proxy)
 
 * Isolation
   - publishing ports is optional
@@ -91,7 +92,8 @@
   - Running from source for dev
   - test in isolation
   - Use a published docker image:
-    =mba --mb docker:metabase/metabase-enterprise --app-db postgres=
+
+ =mba --mb docker:metabase/metabase-enterprise --app-db postgres=
 
 * Extra
   mba builds docker-compose.ymls on-the-fly and uses docker-compose
@@ -108,8 +110,8 @@
   [[./docker-compose-simple.png]]
 
 
-* The End
-  [[./slot-small.jpg]]
+* The Demo/End
+
 
 * vars                                                             :noexport:
 #+ATTR_HTML: width="500px"
