@@ -106,7 +106,7 @@
     #+end_src
 
 * extra commands
-  =mba --app-db postgres graph=
+  =mba --app-db h2 graph=
   [[./docker-compose-simple.png]]
 
 
