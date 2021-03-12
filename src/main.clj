@@ -258,14 +258,14 @@
           docker-compose envs))
 
 (defn- prepare-dc [opts]
-  (let [app-db (:app-db opts)
-        data-db (keyword (:data-db opts))
-        proxy (keyword (:proxy opts))
-        publish (:publish opts)
-        prefix (:prefix opts)
-        env (:env opts)
+  (let [app-db              (:app-db opts)
+        data-db             (keyword (:data-db opts))
+        proxy               (keyword (:proxy opts))
+        publish             (:publish opts)
+        prefix              (:prefix opts)
+        env                 (:env opts)
         [protocol metabase] (:mb opts)
-        metabase (str/replace metabase #"~/" (str (System/getProperty "user.home") "/"))]
+        metabase            (str/replace metabase #"~/" (str (System/getProperty "user.home") "/"))]
 
     (-> (cond-> (assemble-app-db docker-compose app-db)
 
@@ -294,7 +294,7 @@
            (update-in [:services :metabase :volumes] conj
                       (str (-> metabase io/file .getCanonicalPath ) ":/app/source/"))
            (assoc-in [:services :metabase :build]
-                     {:context (str (-> metabase io/file .getCanonicalPath ) "/.devcontainer/") ; ?! maybe unify to
+                     {:context    (str (-> metabase io/file .getCanonicalPath ) "/.devcontainer/") ; ?! maybe unify to
                       :dockerfile "Dockerfile"}))
 
           ;; proxy?
@@ -352,14 +352,6 @@
   ;; https://github.com/babashka/babashka/issues/299
   ;; https://book.babashka.org/#child_processes
   (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" ~container "sh" "-l" "-i" "-c" ~@cmds])
-      (.inheritIO)
-      (.start)
-      (.waitFor)))
-
-(defn- exec-to
-  ;; try with $ foo=hola mba exec-to echo foo
-  [container & cmds]
-  (-> (ProcessBuilder. `["sh" "-l" "-i" "-c" "env"])
       (.inheritIO)
       (.start)
       (.waitFor)))

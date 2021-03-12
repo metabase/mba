@@ -22,44 +22,6 @@ deps() {
   done
 }
 
-bjo-print-as() {
-  if echo "$1" | grep -q "^[{\[]"; then
-    echo "$*"
-  elif echo "$1" | grep -q "^null$"; then
-    echo -n "null"
-  elif echo "$1" | grep -q  "^true$"; then
-    echo -n "true"
-  elif echo "$1" | grep -q "^false$"; then
-    echo -n "false"
-  elif echo "$1" | grep -q "^-\?[0-9]\+$"; then
-    echo -n "$1"
-  else
-    echo -n "\"$*\""
-  fi
-}
-
-# quoting is important.
-# bjo a="hi there" b=12 c="$(bjo -a 1 "1 a" 2 "is it now" \
-#     working 3 "$(bjo -a 1 "$(bjo a="a 3")")")" |
-# jq
-bjo() {
-  local acc=()
-  if [[ "$1" == "-a" ]] ; then
-    shift
-    for p in "$@" ; do
-      acc+=("$(bjo-print-as "${p}")")
-    done
-    echo -n "["; IFS=","; echo -n "${acc[*]}"; echo -n "]"; IFS=" "
-  else
-    for p in "$@" ; do
-      IFS='=' read -ra PARAMS <<< $(echo "$p")
-      acc+=("\"${PARAMS[0]}\":$(bjo-print-as "${PARAMS[1]}")")
-    done
-    echo -n "{"; IFS=","; echo -n "${acc[*]}"; echo -n "}"; IFS=" "
-  fi
-}
-
-
 mb-setup() {
   deps jo httpie jq
   http :3000/api/setup \
