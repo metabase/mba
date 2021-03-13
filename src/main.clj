@@ -69,7 +69,7 @@
                  :stdin_open true
                  :tty true
                  :networks ["mbanet"]
-                 :labels {"com.metabase.d" true}}
+                 :labels {"com.metabase.mba" true}}
 
                 :mongodb
                 {:image "circleci/mongo:4.0"
@@ -79,7 +79,7 @@
                  :stdin_open true
                  :tty true
                  :networks ["mbanet"]
-                 :labels {"com.metabase.d" true}}
+                 :labels {"com.metabase.mba" true}}
 
                 :mariadb-latest
                 {:image "mariadb:latest"
@@ -93,7 +93,7 @@
                  :stdin_open true
                  :tty true
                  :networks ["mbanet"]
-                 :labels {"com.metabase.d" true}}
+                 :labels {"com.metabase.mba" true}}
 
                 :presto
                 {:image "metabase/presto-mb-ci"
@@ -102,7 +102,7 @@
                  :stdin_open true
                  :tty true
                  :networks ["mbanet"]
-                 :labels {"com.metabase.d" true}}
+                 :labels {"com.metabase.mba" true}}
 
                 :sparksql
                 {:image "metabase/spark:2.1.1"
@@ -111,7 +111,7 @@
                  :stdin_open true
                  :tty true
                  :networks ["mbanet"]
-                 :labels {"com.metabase.d" true}}
+                 :labels {"com.metabase.mba" true}}
 
                 :sqlserver
                 {:image "mcr.microsoft.com/mssql/server:2017-latest"
@@ -123,7 +123,7 @@
                  :stdin_open true
                  :tty true
                  :networks ["mbanet"]
-                 :labels {"com.metabase.d" true}}
+                 :labels {"com.metabase.mba" true}}
 
                 :vertica
                 {:image "sumitchawla/vertica"
@@ -135,7 +135,7 @@
                  :stdin_open true
                  :tty true
                  :networks ["mbanet"]
-                 :labels {"com.metabase.d" true}}
+                 :labels {"com.metabase.mba" true}}
 
                 :postgres
                 {:image "postgres:12"
@@ -155,7 +155,7 @@
                  :stdin_open true
                  :tty true
                  :networks ["mbanet"]
-                 :labels {"com.metabase.d" true}}
+                 :labels {"com.metabase.mba" true}}
 
                 :mysql
                 {:image "circleci/mysql:5.7.23"
@@ -166,7 +166,7 @@
                  :stdin_open true
                  :tty true
                  :networks ["mbanet"]
-                 :labels {"com.metabase.d" true}}
+                 :labels {"com.metabase.mba" true}}
 
                 :h2
                 {:image "oscarfonts/h2"
@@ -185,9 +185,8 @@
                      :services
                      {:maildev
                       {:image "maildev/maildev"
-                       ;; :ports ["1080:80", "1025:25"]
                        :ports ["80", "25"]
-                       :labels {"com.metabase.d" true}
+                       :labels {"com.metabase.mba" true}
                        :networks ["mbanet"]
                        }
                       :metabase
@@ -223,7 +222,7 @@
                        :command "tail -f /dev/null"
                        :ports ["3000" "8080" "7888"]
                        :networks ["mbanet" "mbanet2"]
-                       :labels {"com.metabase.d" true}}}})
+                       :labels {"com.metabase.mba" true}}}})
 
 (def all-dbs {:postgres "jdbc:postgresql://postgres:5432/metabase?user=metauser&password=metapass"
               :mariadb-latest "jdbc:mysql://mariadb-latest:3306/metabase_test?user=root"
@@ -378,7 +377,6 @@
   (println opts)
   (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l" "-i"])
       (.inheritIO)
-      (.inheritIO)
       (.start)
       (.waitFor)))
 
@@ -474,7 +472,7 @@
    ["-P" "--publish PUBLISH"
     "publish ports"
     :default true
-    :validate [#{"true" "false"}]]
+    :parse-fn #(= % "true")]
    ;; ["-pp" "--port PORT" "Port number"
    ;;  :multi true
    ;;  :default ["3000" "8080" "7888"]
@@ -486,10 +484,6 @@
    ;;  ]
    ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "mb"]
    ["-n" "--network NETWORK" "network name" :default nil]
-   ["-t" "--tag TAG" "metabase/metabase:v0.37.9  or path-to-source"
-    :default nil
-    :validate [#(or (.exists (io/file %))
-                    (re-find #"\w+/\w+:?.*" %))]]
    ["-e" "--env ENV" "environment vars to pass along"
     :default []
     :multi true
