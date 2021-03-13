@@ -207,7 +207,7 @@
                         :ENTERPRISE_TOKEN  "ENV ENT_TOKEN"
                         :MB_EDITION "ee"
                         ;; :JAVA_OPTS "-Dlog4j.configurationFile=file:///metabase.db/log4j2.xml"
-                        :MBA_PREFIX "MB"
+                        :MBA_PREFIX "mba"
                         :MBA_DB_CLI "lein run h2"
                         :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"
                         :MB_EMAIL_SMTP_HOST "maildev"
@@ -487,7 +487,7 @@
    ;;             ;;    (remove #{(second (re-find #"^(\d+):\d+$" x))} acc)
    ;;             ;;    x))
    ;;  ]
-   ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "mb"]
+   ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "mba"]
    ["-n" "--network NETWORK" "network name" :default nil]
    ["-e" "--env ENV" "environment vars to pass along"
     :default []
