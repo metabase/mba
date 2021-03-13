@@ -395,13 +395,15 @@
             (str/replace (.getPath my-temp-file) "/tmp/" "") "--force")
     (sh/sh opener "/tmp/docker-compose.png")))
 
-(defmethod task :install-dep
-  [[_ opts]]
+(defmethod task :run
+  [[_ opts [_run_ & args]]]
   (prepare-dc opts)
-  (-> ^{:out :inherit :err :inherit}
-      ($ docker-compose -f ~my-temp-file exec metabase apt update))
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" "metabase" ~@args])
+      (.inheritIO)
+      (.start)
+      (.waitFor)
+      System/exit)
   nil)
-
 
 (defmethod task :help
   [summary]
