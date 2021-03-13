@@ -1,7 +1,7 @@
 #!/usr/bin/env bb
 (ns mybbt.main
   (:require
-   ;; [babashka.fs :as fs]
+   [babashka.fs :as fs]
    [clojure.java.shell :as sh]
    [clojure.java.io :as io]
    [clojure.repl :refer :all]
@@ -17,19 +17,12 @@
 (def mba-config (str home ".mba/"))
 (def mba-home (str mba-config ".mba-home/"))
 
-;; (def resources
-;;   (-> *file*
-;;        io/file
-;;        .getParentFile
-;;        .getParent
-;;        (io/file "resources")
-;;        str))
-
 (def resources
-  (str (str/trim-newline (:out
-                          (sh/sh "dirname"
-                                 (str/trim-newline
-                                  (:out (sh/sh "realpath" (str *file*)))))))  "/../resources/"))
+  (-> *file*
+      fs/real-path
+      fs/parent
+      fs/parent
+      (str "/resources")))
 
 ;; * data
 (def reverse-proxies {:haproxy
@@ -39,9 +32,8 @@
                        [(str resources "/stacks/reverse-proxies/haproxy/config/:/usr/local/etc/haproxy/:ro")
                         (str resources "/stacks/reverse-proxies/haproxy/log:/dev/log")]
                        :networks ["mbanet" "mbanet2"]
-                       :ports ["8080:80"]
-                       :depends_on ["metabase"]
-                       }
+                       :ports ["80"]
+                       :depends_on ["metabase"]}
                       :envoy
                       {:image "envoyproxy/envoy-alpine:v1.17.0"
                        :hostname "envoy"
@@ -49,29 +41,18 @@
                        [(str resources "/stacks/reverse-proxies/envoy/config/envoy.yaml:/etc/envoy/envoy.yaml")
                         (str resources "/stacks/reverse-proxies/envoy/logs:/var/log")]
                        :networks ["mbanet" "mbanet2"]
-                       :ports ["8080:80"]
-                       :depends_on ["metabase"]
-                       }
+                       :ports ["80"]
+                       :depends_on ["metabase"]}
                       :nginx
                       {:image "nginx:1.19.6-alpine"
                        :hostname "nginx"
                        :volumes
                        [(str resources "/stacks/reverse-proxies/nginx/nginx.conf:/etc/nginx/conf.d/default.conf")]
                        :networks ["mbanet" "mbanet2"]
-                       :ports ["8080:80"]
+                       :ports ["80"]
                        :depends_on ["metabase"]}})
 
-(def databases {:mysql57
-                {:image "circleci/mysql:5.7.23"
-                 :user "root"
-                 :volumes [(str mba-home ":/root/")]
-                 :restart "on-failure"
-                 :stdin_open true
-                 :tty true
-                 :networks ["mbanet"]
-                 :labels {"com.metabase.mba" true}}
-
-                :mongodb
+(def databases {:mongodb
                 {:image "circleci/mongo:4.0"
                  :user "root"
                  :volumes [(str mba-home ":/root/")]
@@ -81,7 +62,7 @@
                  :networks ["mbanet"]
                  :labels {"com.metabase.mba" true}}
 
-                :mariadb-latest
+                :mariadb
                 {:image "mariadb:latest"
                  :volumes [(str mba-home ":/root/")]
                  :environment
@@ -176,8 +157,7 @@
                                               ; run normally it locks
                                               ; the db file!!! wtf
                  :environment
-                 {:MBA_DB_CLI "bash"}
-                 }})
+                 {:MBA_DB_CLI "bash"}}})
 
 (def docker-compose {:version "3.5"
                      :networks {:mbanet {} :mbanet2 {}}
@@ -187,8 +167,7 @@
                       {:image "maildev/maildev"
                        :ports ["80", "25"]
                        :labels {"com.metabase.mba" true}
-                       :networks ["mbanet"]
-                       }
+                       :networks ["mbanet"]}
                       :metabase
                       {:depends_on ["maildev"]
                        :working_dir "/app/source"
@@ -224,9 +203,13 @@
                        :networks ["mbanet" "mbanet2"]
                        :labels {"com.metabase.mba" true}}}})
 
-(def all-dbs {:postgres "jdbc:postgresql://postgres:5432/metabase?user=metauser&password=metapass"
-              :mariadb-latest "jdbc:mysql://mariadb-latest:3306/metabase_test?user=root"
-              :mysql57 "jdbc:mysql://mysql57:3306/metabase_test?user=root"})
+;; This could be injected in the database maps, but for now I still
+;; don't know if it always be as clear as having a fixed string, or
+;; it'll need more massaging
+(def all-dbs
+  {:postgres "jdbc:postgresql://postgres:5432/metabase?user=metauser&password=metapass"
+   :mariadb "jdbc:mysql://mariadb:3306/metabase_test?user=root"
+   :mysql "jdbc:mysql://mysql:3306/metabase_test?user=root"})
 
 ;; * docker-compose
 
@@ -247,7 +230,8 @@
         (assoc-in [:services :metabase :environment :MB_DB_CONNECTION_URI] (kw-name all-dbs))
         (assoc-in [:services kw-name] (kw-name databases))
         (update-in [:services :metabase :depends_on] conj name)
-        (cond-> version (assoc-in [:services kw-name :image] app-db)))))
+        (cond-> version (update-in [:services kw-name :image]
+                                   #(str/replace % #":[^:]*$" (str ":" version)))))))
 
 (defn- inject-envs [docker-compose envs]
   (reduce (fn [acc x]
@@ -297,7 +281,6 @@
                      {:context    (str (-> metabase io/file .getCanonicalPath ) "/.devcontainer/") ; ?! maybe unify to
                       :dockerfile "Dockerfile"}))
 
-          ;; proxy?
           proxy
           (update-in [:services] assoc proxy (proxy reverse-proxies))
 
@@ -312,9 +295,8 @@
           (seq env)
           (inject-envs env)
 
-          ;;prefix
-          ;;(update :services #(update-values % assoc-in [:environment :prefix] prefix))
-          )
+          prefix ;; always will have something
+          (assoc-in [:services :metabase :environment :MBA_PREFIX] prefix))
 
         docker-compose-yml
         docker-compose-yml-file!)))
