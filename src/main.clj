@@ -300,12 +300,17 @@
           proxy
           (update-in [:services] assoc proxy (proxy reverse-proxies))
 
-          (and publish (not proxy))
-          (assoc-in [:services :metabase :ports]
-                    ["3000:3000" "8080:8080" "7888:7888"])
+          publish
+          (->
+           (assoc-in [:services :metabase :ports] ["3000:3000" "8080:8080" "7888:7888"])
+           (assoc-in [:services :maildev :ports] ["1080:80", "1025:25"]))
+
+          (and publish proxy)
+          (assoc-in [:services proxy :ports] ["8081:80"])
 
           (seq env)
           (inject-envs env)
+
           ;;prefix
           ;;(update :services #(update-values % assoc-in [:environment :prefix] prefix))
           )
@@ -397,7 +402,6 @@
 (defmethod task :graph
   [[_ opts]]
   (prepare-dc opts)
-
   (let [opener
         (if (re-find #"Linux"
                      (System/getProperty "os.name"))
