@@ -69,7 +69,17 @@
     --app-db postgres logs -- -f=
 
 * Flags
-
+  **tl;dr**:
+  #+begin_src bash
+    mba --mb ~/prj/metabase \
+        --app-db postgres:13 \
+        --data-db mariadb \
+        --proxy nginx\
+        --env FOO=bar\
+        --network n1\
+        --prefix mb1\
+        up
+  #+end_src
 ** --mb / -M
    Main metabase app source or image.
 
@@ -83,11 +93,8 @@
    - =cd ~/src/metabase; mba -M ./=
    - =mba --mb ~/src/metabase/=
    - =mba --mb file:~/src/metabase/=
-   - =mba --mb file:~/src/metabase/=
    - =mba --mb docker:metabase/metabase:v0.37=
    - =mba --mb git:ref=  <- not implemented
-   - =mba --app-db mariadb --data-db postgres=
-   - =mba --app-db mariadb --data-db postgres --proxy nginx=
 
 ** --app-db / -d
    App db for metabase. Defaults to =postgres=. Valid options are:
@@ -139,7 +146,6 @@
 ** --prefix / -p
    stack name. Defaults to "mba". Useful when running multiple
    instances.
-
 
 ** --network / -n
    Network name. By default it creates an anonymous network per stack,
