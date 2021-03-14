@@ -172,35 +172,45 @@
    normally, and then exec into it and run sh. That works ok.
 
 * Troubleshooting
-** I'm using a non versioned docker:metabase/metabase and mb is using an old version
+** I'm using docker:metabase/metabase and mba is using an old version
    Use =mba --mb docker:metabase/metabase:v0.37.9 up= or use the
    =pull= command: =mba --mb docker:metabase/metabase pull=
 
-* requirements to make it work as a dev env
+* modifications done (or to be done) to make it work as a dev env
 ** node
   Change the webpack command to --host 0.0.0.0
 
+  #+begin_src bash
     "build-watch": "yarn && webpack --watch",
-  - "build-hot": "yarn && NODE_ENV=hot webpack-dev-server --progress",
-  - "build-hot": "yarn && NODE_ENV=hot webpack-dev-server --progress --host 0.0.0.0",
+    - "build-hot": "yarn && NODE_ENV=hot webpack-dev-server --progress",
+    + "build-hot": "yarn && NODE_ENV=hot webpack-dev-server --progress --host 0.0.0.0",
     "build-stats": "yarn && webpack --json > stats.json",
+  #+end_src
 
 ** clojure
-    lein repl :headless :port 7888
+   Add :port and :host.
+
+  #+begin_src bash
+  lein repl :headless :host 0.0.0.0 :port 7888
+  #+end_src
 
 ** How to see actual Metabase queries sent to the database
+
+  #+begin_src bash
    ./src/main.clj --app-db postgres --data-db postgres logs -- --tail=100 -f postgres | grep -A 5 "queryHash"
+  #+end_src
 
 ** cypress
    TODO
 
 ** how to see what is the actual compose being built
-./src/main.clj --data-db postgres --app-db postgres config | less
-
-https://github.com/microsoft/vscode-dev-containers/tree/master/containers/java-8
+  #+begin_src bash
+   ./src/main.clj --data-db postgres --app-db postgres config | less
+  #+end_src
 
 * See also
   - Mba is heavily inspired on [[https://github.com/Kong/gojira][Gojira]]. Nearly an exact port, molded to
     cover a slightly different usecase.
   - https://evilmartians.com/chronicles/reusable-development-containers-with-docker-compose-and-dip
   - https://danlebrero.com/2017/09/25/how-do-docker-compose-development-environement/
+  - https://github.com/microsoft/vscode-dev-containers/tree/master/containers/java-8
