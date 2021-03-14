@@ -2,14 +2,13 @@
 
 ** Dependencies
    - docker & docker-compose
-   - babashka (https://github.com/babashka/babashka/)  2.12 or more.
+   - babashka (https://github.com/babashka/babashka/)  2.12 or higher.
 
-
-** install
+** Install
    - install babashka
    - install docker && docker-compose
    - git clone https://github.com/kidd/mba
-   - ln -s mba/src/main.clj ~/bin/mba || can work without the symlink 
+   - ln -s mba/src/main.clj ~/bin/mba || can work without the symlink
    - mba --help or ./mba/src/main.clj --help
 
 ** Usage
@@ -38,10 +37,11 @@
    #+begin_src bash
      mba up
      mba shell
-     eval $MBA_CLI
+     eval $MBA_CLI        # yarn build-hot with host 0.0.0.0
 
      mba shell
-     eval $MBA_YARN_BUiLD
+     eval $MBA_YARN_BUILD # lein repl as cider-jack-in would call it with
+                          # fixed host 0.0.0.0 and port 7888
    #+end_src
    so hacky, amazing.
 
@@ -54,23 +54,27 @@
 ** Different configurations
    - =mba --help= will show the options accepted by mba.
    - =cd ~/src/metabase; mba -M ./=
-   - =mba -M file:~/src/metabase/=
-   - =mba -M file:~/src/metabase/=
-   - =mba -M docker:metabase/metabase:v0.37=
-   - =mba -M git:release-=
-   - =mba --app-db mariadb-latest --data-db=postgres=
-   - =mba --app-db mariadb-latest --data-db=postgres --proxy=nginx=
+   - =mba --mb file:~/src/metabase/=
+   - =mba --mb file:~/src/metabase/=
+   - =mba --mb docker:metabase/metabase:v0.37=
+   - =mba --mb git:ref=  <- not implemented
+   - =mba --app-db mariadb --data-db postgres=
+   - =mba --app-db mariadb --data-db postgres --proxy nginx=
 
 ** ports
-   by default, the stack will share port 3000, 8080 and 7888
-   (lein). if you're using a proxy, it won't share them, and will only
-   share 8080 as the main entrypoint.
+   By default, the stack will share ports:
+   - 3000: backend
+   - 8080: frontend
+   - 7888: for lein repl
+   - 1025: maildev mail port
+   - 1080: maildev http
+   - 8081 if --proxy is set
 
 ** networks
    By default it will create a new unnamed network, but we can tell
-   mba to create a named network with =-n foo=. This and =docker run=
-   allows us to run different mb versions in the same environment to
-   test upgrades and the like.
+   mba to create a named network with =-n foo=. This and
+   =docker-compose run= allows us to run different mb versions in the
+   same environment to test upgrades and the like.
 
    #+begin_src bash
      # this will start the "main" one
@@ -84,8 +88,8 @@
    https://github.com/metabase/metabase/issues/14528), but you can run
    normally, and then exec into it and run sh. That works ok.
 
-* troubleshooting
-** I'm using default or a non versioned docker:* and mb is using an old version
+* Troubleshooting
+** I'm using a non versioned docker:metabase/metabase and mb is using an old version
    Use =mba --mb docker:metabase/metabase:v0.37.9 up= or use the
    =pull= command: =mba --mb docker:metabase/metabase pull=
 
@@ -94,25 +98,23 @@
 ** node
   Change the webpack command to --host 0.0.0.0
 
-     "build-watch": "yarn && webpack --watch",
+    "build-watch": "yarn && webpack --watch",
   - "build-hot": "yarn && NODE_ENV=hot webpack-dev-server --progress",
   - "build-hot": "yarn && NODE_ENV=hot webpack-dev-server --progress --host 0.0.0.0",
     "build-stats": "yarn && webpack --json > stats.json",
+
 ** clojure
     lein repl :headless :port 7888
 
-** EE flags
-add an "--enterprise true" to the command and it will launch an Enterprise version (you need to hardcode the token in the main.clj file still)
-
 ** How to see actual Metabase queries sent to the database
-./src/main.clj --app-db postgres --data-db postgres --enterprise true logs -- --tail=100 -f postgres | grep -A 5 "queryHash"
+   ./src/main.clj --app-db postgres --data-db postgres logs -- --tail=100 -f postgres | grep -A 5 "queryHash"
 
 ** cypress
-
-** graph
+   TODO
 
 ** how to see what is the actual compose being built
 ./src/main.clj --data-db postgres --app-db postgres config | less
+
 
 https://github.com/microsoft/vscode-dev-containers/tree/master/containers/java-8
 
