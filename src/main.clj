@@ -181,11 +181,7 @@
                                  ;; (str resources "/base/profile.sh:/etc/profile.d/99-profile.sh")
                                  (str resources "/base/profile.sh:/etc/profile.d/00-restore-env.sh")]
                        :environment
-                       {:ENABLE_ENTERPRISE_EDITION "true"
-                        :HAS_ENTERPRISE_TOKEN "true"
-                        :ENTERPRISE_TOKEN  "ENV ENT_TOKEN"
-                        :MB_EDITION "ee"
-                        ;; :JAVA_OPTS "-Dlog4j.configurationFile=file:///metabase.db/log4j2.xml"
+                       { ;; :JAVA_OPTS "-Dlog4j.configurationFile=file:///metabase.db/log4j2.xml"
                         :MBA_PREFIX "mba"
                         :MBA_DB_CLI "lein run h2"
                         :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"
@@ -362,10 +358,7 @@
   [[_ opts]]
   (prepare-dc opts)
   (let [opener
-        (if (re-find #"Linux"
-                     (System/getProperty "os.name"))
-          "xdg-open"
-          "open")]
+        (if (re-find #"Linux" (System/getProperty "os.name")) "xdg-open" "open")]
     (sh/sh  "docker" "run" "--rm" "--name" "dcv" "-v" "/tmp/:/input"
             "pmsipilot/docker-compose-viz" "render" "-m" "image"
             (str/replace (.getPath my-temp-file) "/tmp/" "") "--force")
@@ -412,7 +405,7 @@
     (println summary)
     (println "Usage:")
     (println "mba up")
-    (println "mba go")
+    (println "mba shell")
     (println "mba dbconsole")
     (println "firefox $(mba port maildev 80)")
     (println "mba logs -- -f -t maildev")
