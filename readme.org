@@ -3,7 +3,7 @@
   docker-compose.
 * Dependencies
   - docker & docker-compose
-  - [[https://github.com/babashka/babashka/][babashka]] 2.12 or higher. [[it fro][Download]]
+  - [[https://github.com/babashka/babashka/][babashka]] 2.12 or higher. [[https://github.com/babashka/babashka/releases/][Download]]
 
 * Install
   - install babashka
