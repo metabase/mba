@@ -310,28 +310,7 @@
   (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args])
       (.inheritIO)
       (.start)
-      (.waitFor))
-
-  ;; (process `["docker-compose" "-f" ~(.getPath my-temp-file) ~@args]
-  ;;          {:out :inherit :err :inherit})
-  ;; (-> ^{:out :inherit :err :inherit}
-  ;;     ($ docker-compose -f ~my-temp-file ~(name cmd)))
-  )
-
-(defmacro with-filter
-  "Still not useful now, but it will be.
-  https://redhatnordicssa.github.io/shell-scripting-using-clojure-and-babashka"
-  [command & forms]
-  `(let [sh#  (or (System/getenv "SHELL") "sh")
-         pb#  (doto (ProcessBuilder. [sh# "-c" ~command])
-                (.redirectError
-                 (ProcessBuilder$Redirect/to (io/file "/dev/tty"))))
-         p#   (.start pb#)
-         in#  (io/reader (.getInputStream p#))
-         out# (io/writer (.getOutputStream p#))]
-     (binding [*out* out#]
-       (try ~@forms (.close out#) (catch Exception e#)))
-     (take-while identity (repeatedly #(.readLine in#)))))
+      (.waitFor)))
 
 (defn- exec-into
   [opts container & cmds]
@@ -368,11 +347,6 @@
       (.start)
       (.waitFor)))
 
-(defmethod task :go
-  [[_ opts]]
-  (prepare-dc opts)
-  (exec-into opts "metabase" "eval $MBA_CLI" ))
-
 (defmethod task :dbconsole
   ;; EACH possible db container should add an env var MBA_DB_CLI that
   ;; will be ran by this command to open a shell.
@@ -398,7 +372,8 @@
 (defmethod task :run
   [[_ opts [_run_ & args]]]
   (prepare-dc opts)
-  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" "metabase" ~@args])
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)
+                         "exec" "metabase" "sh" "-l" "-i" "-c"  ~@args])
       (.inheritIO)
       (.start)
       (.waitFor)
