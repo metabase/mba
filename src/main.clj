@@ -142,12 +142,14 @@
                 {:image "circleci/mysql:5.7.23"
                  :environment
                  {:user "root"
-                  :database "circle_test"}
+                  :database "circle_test"
+                  :MBA_DB_CLI "mysql --user=root --database=circle_test"}
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
                  :networks ["mbanet"]
-                 :labels {"com.metabase.mba" true}}
+                 :labels {"com.metabase.mba" true}
+                 }
 
                 :h2
                 {:image "oscarfonts/h2"
@@ -252,11 +254,11 @@
     (-> (cond-> (assemble-app-db docker-compose app-db)
 
           ;; data-db
-          (not (nil? (:data-db opts)))
+          (:data-db opts)
           (assoc-in [:services data-db] (data-db databases))
 
           ;; network
-          (not (nil? (:network opts)))
+          (:network opts)
           (assoc-in [:networks :d] {:name (:network opts)})
 
           ;; dev / release
@@ -454,11 +456,11 @@
    ["-d" "--app-db APP-DB"
     :default "postgres"
     :parse-fn str/lower-case
-    :validate [#(#{:h2 :postgres :postgresql :mysql :mariadb-latest} (keyword (re-find #"^[^:]*" %)))]]
+    :validate [#(#{:h2 :postgres :postgresql :mysql :mariadb} (keyword (re-find #"^[^:]*" %)))]]
    ["-D" "--data-db DATA-DB"
     :default nil
     :parse-fn (comp keyword str/lower-case)
-    :validate [#{:postgres :postgresql :mysql :mongodb :mariadb-latest :vertica} ]]])
+    :validate [#{:postgres :postgresql :mysql :mongodb :mariadb :vertica :sparksql :sqlserver :presto}]]])
 
 (defn copy-file [source-path dest-path]
   (io/copy (io/file source-path) (io/file dest-path)))
