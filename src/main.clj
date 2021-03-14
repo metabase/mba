@@ -194,6 +194,8 @@
                         :MB_ENABLE_TEST_ENDPOINTS "true"
                         :MBA_CLI "lein update-in :dependencies conj \\[nrepl/nrepl\\ \\\"0.8.3\\\"\\] -- update-in :plugins conj \\[refactor-nrepl\\ \\\"2.5.1\\\"\\] -- update-in :plugins conj \\[cider/cider-nrepl\\ \\\"0.25.8\\\"\\] -- repl-ee :headless :host 0.0.0.0  :port 7888"
                         :MBA_YARN_BUILD "yarn && NODE_ENV=hot yarn webpack-dev-server --progress --host 0.0.0.0"
+                        :LEIN_REPL_PORT 7888
+                        :LEIN_REPL_HOST "0.0.0.0"
                         }
                        :tty "True"
                        :stdin_open "True"
