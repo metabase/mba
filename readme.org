@@ -192,6 +192,5 @@ https://github.com/microsoft/vscode-dev-containers/tree/master/containers/java-8
 * See also
   - Mba is heavily inspired on [[https://github.com/Kong/gojira][Gojira]]. Nearly an exact port, molded to
     cover a slightly different usecase.
-  - https://danlebrero.com/2017/09/25/how-do-docker-compose-development-environement/
-  - https://dev.to/danlebrero/how-to-docker-compose-a-developer-environment-an-open-source-example-72k
   - https://evilmartians.com/chronicles/reusable-development-containers-with-docker-compose-and-dip
+  - https://danlebrero.com/2017/09/25/how-do-docker-compose-development-environement/
