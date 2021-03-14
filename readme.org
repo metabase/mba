@@ -1,76 +1,80 @@
-* basics
+* Overview
+  Metabase Assembler is a development and repro tool based on
+  docker-compose.
+* Dependencies
+  - docker & docker-compose
+  - [[https://github.com/babashka/babashka/][babashka]] 2.12 or higher. [[it fro][Download]]
 
-** Dependencies
-   - docker & docker-compose
-   - babashka (https://github.com/babashka/babashka/)  2.12 or higher.
+* Install
+  - install babashka
+  - install docker && docker-compose
+  - git clone https://github.com/kidd/mba
+  - If you want it in your path: =ln -s ./mba/src/main.clj ~/bin/mba=
+  - mba --help or ./mba/src/main.clj --help
 
-** Install
-   - install babashka
-   - install docker && docker-compose
-   - git clone https://github.com/kidd/mba
-   - ln -s mba/src/main.clj ~/bin/mba || can work without the symlink
-   - mba --help or ./mba/src/main.clj --help
+* Usage
+  mba wraps docker-compose, and all commands it does not understand
+  are passed to the underlying docker-compose.
 
-** Usage
-   mba wraps docker-compose, and all commands it does not understand
-   are passed to the underlying docker-compose.
+  =mba config= is equivalent to =docker-compose -f tmp.yml config= and
+  will show the yml file that is generating with your current flags.
 
-   - =mba config == docker-compose -f tmp.yml config= . will show what
-     is it about to generate
+  - =mba up= . creates the stack
+  - =mba shell=. gives a shell inside the main metabase container
+  - =mba dbconsole=. console into the app-db
+  - =mba logs -- -f=. show logs
+  - =mba ps=. show containers on this stack
+  - =mba down=. destroys the stack
 
-   By default, it will share ports, but in the future, it will not
-   share them, and make you use =--port 3000:3000= flags, so you can
-   jail things better.
+  By default, it will share ports. ==--publish false= will jail the
+  whole stack not publishing any port.
 
-   - =mba up= . creates the stack
-   - =mba shell=. gives a shell inside the main metabase container
-   - =mba dbconsole=. console into the app-db
-   - =mba logs -- -f=. show logs
-   - =mba ps=. show containers on this stack
-   - =mba down=. destroys the stack
+  If current directory is not a metabase source dir, by default it
+  will use dockerhub's =metabase/metabase= image. This WILL start
+  automatically.
 
-   If it is ran in the metabase directory, it will run the
-   .devcontainer image, so you should enter it and run the commands
-   manually to start the app.
+  If it is ran in a metabase source directory, it will run the
+  .devcontainer image, so you should shell into it and run the
+  commands manually to start the app.
 
-   SUPERHACK: ENV vars are passed around at the moment, to have the commands available
-   #+begin_src bash
-     mba up
-     mba shell
-     eval $MBA_CLI        # yarn build-hot with host 0.0.0.0
+  SUPERHACK: ENV vars are passed around at the moment, to have the commands available
+  #+begin_src bash
+    mba up
+    mba shell
+    eval $MBA_CLI        # yarn build-hot with host 0.0.0.0
 
-     mba shell
-     eval $MBA_YARN_BUILD # lein repl as cider-jack-in would call it with
-                          # fixed host 0.0.0.0 and port 7888
-   #+end_src
-   so hacky, amazing.
+    mba shell
+    eval $MBA_YARN_BUILD # lein repl as cider-jack-in would call it with
+                         # fixed host 0.0.0.0 and port 7888
+  #+end_src
+  so hacky, amazing.
 
-   - mba --help may help you with the commands and option, but for the
-     values, explore src/main.clj
-   - to pass flags to docker-compose , or any command underlying mba,
-     the way to pass as a parameter to inside is with =--=: =mba
-     --app-db postgres logs -- -f=
+  - mba --help may help you with the commands and option, but for the
+    values, explore src/main.clj
+  - to pass flags to docker-compose , or any command underlying mba,
+    the way to pass as a parameter to inside is with =--=: =mba
+    --app-db postgres logs -- -f=
 
-** Different configurations
-   - =mba --help= will show the options accepted by mba.
-   - =cd ~/src/metabase; mba -M ./=
-   - =mba --mb file:~/src/metabase/=
-   - =mba --mb file:~/src/metabase/=
-   - =mba --mb docker:metabase/metabase:v0.37=
-   - =mba --mb git:ref=  <- not implemented
-   - =mba --app-db mariadb --data-db postgres=
-   - =mba --app-db mariadb --data-db postgres --proxy nginx=
+* Different configurations
+  - =mba --help= will show the options accepted by mba.
+  - =cd ~/src/metabase; mba -M ./=
+  - =mba --mb file:~/src/metabase/=
+  - =mba --mb file:~/src/metabase/=
+  - =mba --mb docker:metabase/metabase:v0.37=
+  - =mba --mb git:ref=  <- not implemented
+  - =mba --app-db mariadb --data-db postgres=
+  - =mba --app-db mariadb --data-db postgres --proxy nginx=
 
-** ports
-   By default, the stack will share ports:
-   - 3000: backend
-   - 8080: frontend
-   - 7888: for lein repl
-   - 1025: maildev mail port
-   - 1080: maildev http
-   - 8081 if --proxy is set
+* ports
+  By default, the stack will share ports:
+  - 3000: backend
+  - 8080: frontend
+  - 7888: for lein repl
+  - 1025: maildev mail port
+  - 1080: maildev http
+  - 8081 if --proxy is set
 
-** networks
+* networks
    By default it will create a new unnamed network, but we can tell
    mba to create a named network with =-n foo=. This and
    =docker-compose run= allows us to run different mb versions in the
@@ -94,7 +98,6 @@
    =pull= command: =mba --mb docker:metabase/metabase pull=
 
 * requirements to make it work as a dev env
-
 ** node
   Change the webpack command to --host 0.0.0.0
 
@@ -115,10 +118,11 @@
 ** how to see what is the actual compose being built
 ./src/main.clj --data-db postgres --app-db postgres config | less
 
-
 https://github.com/microsoft/vscode-dev-containers/tree/master/containers/java-8
 
-* dalton++
-
-https://chrome.google.com/webstore/detail/requestly-redirect-url-mo/mdnleldcmiljblolnjhpnblkcekpdkpa?hl=en
-https://chrome.google.com/webstore/detail/disable-content-security/ieelmcmcagommplceebfedjlakkhpden?hl=en
+* See also
+  - Mba is heavily inspired on [[https://github.com/Kong/gojira][Gojira]]. Nearly an exact port, molded to
+    cover a slightly different usecase.
+  - https://danlebrero.com/2017/09/25/how-do-docker-compose-development-environement/
+  - https://dev.to/danlebrero/how-to-docker-compose-a-developer-environment-an-open-source-example-72k
+  - https://evilmartians.com/chronicles/reusable-development-containers-with-docker-compose-and-dip
