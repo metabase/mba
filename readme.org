@@ -13,6 +13,12 @@
   - mba --help or ./mba/src/main.clj --help
 
 * Usage & Commands
+
+  *FastTrack:* If you're just bugbashing =mba --mb
+  dockerhub:metabase/metabase up= will spin metabase linked to a
+  postgresql and maildev. Open `localhost:3000` and `localhost:1080`.
+
+
   - =mba up= . creates the stack
   - =mba shell=. gives a shell inside the main metabase container
   - =mba dbconsole=. console into the app-db
@@ -43,11 +49,15 @@
   #+begin_src bash
     mba up
     mba shell
-    eval $MBA_CLI        # yarn build-hot with host 0.0.0.0
+    lein repl     # or `eval $MBA_CLI`. lein repl as cider-jack-in would call it with
+                  # fixed host 0.0.0.0 and port 7888 (which is the exported port by mba)
 
     mba shell
-    eval $MBA_YARN_BUILD # lein repl as cider-jack-in would call it with
-                         # fixed host 0.0.0.0 and port 7888
+    yarn build-hot # or `eval $MBA_YARN_BUILD`, as a tunnable command to
+                   # run the proper yarn build. It used to be a place to
+                   # put special flags like --host 0.0.0.0, but now the
+                   # flag is merged in master
+
   #+end_src
   so hacky, amazing.
 
