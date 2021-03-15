@@ -213,7 +213,7 @@
 (def all-dbs
   {:postgres "jdbc:postgresql://postgres:5432/metabase?user=metauser&password=metapass"
    :mariadb "jdbc:mysql://mariadb:3306/metabase_test?user=root"
-   :mysql "jdbc:mysql://mysql:3306/metabase_test?user=root"})
+   :mysql "jdbc:mysql://mysql:3306/circle_test?user=root"})
 
 ;; * docker-compose
 
