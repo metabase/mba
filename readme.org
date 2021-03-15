@@ -3,21 +3,21 @@
   docker-compose.
 * Dependencies
   - docker & docker-compose
-  - [[https://github.com/babashka/babashka/][babashka]] 2.12 or higher. [[https://github.com/babashka/babashka/releases/][Download]]
+  - [[https://github.com/babashka/babashka/][babashka]] 2.12 or higher.
 
 * Install
-  - install babashka
+  - install babashka. [[https://github.com/babashka/babashka/releases/][Download]]
   - install docker && docker-compose
-  - git clone https://github.com/kidd/mba
+  - git clone https://github.com/metabase/mba
   - If you want it in your path: =ln -s ./mba/src/main.clj ~/bin/mba=
-  - mba --help or ./mba/src/main.clj --help
+  - =mba --help= or =./mba/src/main.clj --help=
 
 * Usage & Commands
 
-  *FastTrack:* If you're just bugbashing =mba --mb
-  dockerhub:metabase/metabase up= will spin metabase linked to a
-  postgresql and maildev. Open `localhost:3000` and `localhost:1080`.
-
+  *FastTrack:* If you're just bugbashing =mba --mb dockerhub:metabase/metabase
+  up= will spin metabase linked to a postgresql and maildev. Open
+  `localhost:3000` and `localhost:1080`. When you're done, =mba --mb
+  dockerhub:metabase/metabase down=.
 
   - =mba up= . creates the stack
   - =mba shell=. gives a shell inside the main metabase container
