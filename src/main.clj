@@ -183,7 +183,11 @@
                                  ;; (str resources "/base/profile.sh:/etc/profile.d/99-profile.sh")
                                  (str resources "/base/profile.sh:/etc/profile.d/00-restore-env.sh")]
                        :environment
-                       { ;; :JAVA_OPTS "-Dlog4j.configurationFile=file:///metabase.db/log4j2.xml"
+                       {:ENABLE_ENTERPRISE_EDITION "true"
+                        :HAS_ENTERPRISE_TOKEN "true"
+                        :ENTERPRISE_TOKEN  "VALID_ENT_TOKEN"
+                        :MB_EDITION "ee"
+                        ;; :JAVA_OPTS "-Dlog4j.configurationFile=file:///metabase.db/log4j2.xml"
                         :MBA_PREFIX "mba"
                         :MBA_DB_CLI "lein run h2"
                         :MB_DB_FILE "/app/source/metabase-h2-db/metabase.db"

@@ -219,4 +219,5 @@
     cover a slightly different usecase.
   - https://evilmartians.com/chronicles/reusable-development-containers-with-docker-compose-and-dip
   - https://danlebrero.com/2017/09/25/how-do-docker-compose-development-environement/
+  - https://opensource.com/article/20/4/how-containerize-build-system
   - https://github.com/microsoft/vscode-dev-containers/tree/master/containers/java-8
