@@ -408,7 +408,7 @@
     (println "  " n2 "      ************ ")
     (println "")
     (println "Summary:")
-    (println summary)
+    (println (second summary))
     (println "Usage:")
     (println "mba up")
     (println "mba shell")
@@ -425,7 +425,7 @@
 
 (def cli-options
   "https://github.com/clojure/tools.cli#example-usage"
-  [["-M" "--mb METABASE"
+  [["-M" "--mb METABASE" "Metabase source path or docker image to run"
     :default (if (.exists (io/file (str pwd "/app.json")))
                ["file" "./"]
                ["docker" "metabase/metabase-enterprise"])
