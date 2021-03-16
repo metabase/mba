@@ -447,7 +447,7 @@
    ;;             ;;    (remove #{(second (re-find #"^(\d+):\d+$" x))} acc)
    ;;             ;;    x))
    ;;  ]
-   ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default "mba"]
+   ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default nil]
    ["-n" "--network NETWORK" "network name" :default nil]
    ["-e" "--env ENV" "environment vars to pass along"
     :default []
@@ -479,6 +479,8 @@
   "fubar"
   [& args]
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options)
+        options (assoc options :prefix (or (:prefix options)
+                                           (str "mba" (hash options))))
         [cmd & rest] arguments]
     (when (or (= cmd "help")
               (:help options))
