@@ -307,8 +307,28 @@
 
 ;;; * Tasks
 (defmulti task first)
-
 (defmethod task :default
+  [[cmd opts args]]
+  (prepare-dc opts)
+  (println "nop"))
+
+(defmethod task :compose
+  [[cmd opts [_compose_ & args]]]
+  (prepare-dc opts)
+  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args])
+      (.inheritIO)
+      (.start)
+      (.waitFor)))
+
+(defmethod task :ps
+  [[cmd opts args]]
+  (prepare-dc opts)
+  (-> (ProcessBuilder. `["docker" "ps" "--filter" "label=com.metabase.mba" ])
+      (.inheritIO)
+      (.start)
+      (.waitFor)))
+
+(defmethod task :down
   [[cmd opts args]]
   (prepare-dc opts)
   (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args])
