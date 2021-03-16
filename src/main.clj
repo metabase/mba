@@ -332,10 +332,21 @@
   (process-async
    `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
 
-(defmethod task :top
+(defmethod task :ps
+  [[cmd opts [_ps_ &  args]]]
+  (prepare-dc opts)
+  (process-async `["docker" "ps" "--filter" "label=com.metabase.mba" ~@args]))
+
+(defmethod task :nuke
   [[cmd opts args]]
   (prepare-dc opts)
-  (process-async ["docker" "ps" "--filter" "label=com.metabase.mba" ]))
+  (process-async ["docker" "network" "prune" "-f"])
+  (->> (sh/sh "docker" "ps" "--filter" "label=com.metabase.mba" "-qa")
+      :out
+      str/split-lines
+      (concat ["docker" "rm" "-fv"])
+      process-async)
+  (println "💣"))
 
 (defmethod task :down
   [[cmd opts args]]
