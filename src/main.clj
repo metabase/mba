@@ -305,6 +305,20 @@
         docker-compose-yml
         docker-compose-yml-file!)))
 
+(defn- process-async
+  [cmd]
+  (-> (ProcessBuilder. cmd)
+      (.inheritIO)
+      (.start)
+      (.waitFor)))
+
+(defn- exec-into
+  [opts container & cmds]
+  ;; https://github.com/babashka/babashka/blob/master/examples/process_builder.clj
+  ;; https://github.com/babashka/babashka/issues/299
+  ;; https://book.babashka.org/#child_processes
+  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" ~container "sh" "-l" "-i" "-c" ~@cmds]))
+
 ;;; * Tasks
 (defmulti task first)
 (defmethod task :default
@@ -315,44 +329,23 @@
 (defmethod task :compose
   [[cmd opts [_compose_ & args]]]
   (prepare-dc opts)
-  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args])
-      (.inheritIO)
-      (.start)
-      (.waitFor)))
+  (process-async
+   `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
 
-(defmethod task :ps
+(defmethod task :top
   [[cmd opts args]]
   (prepare-dc opts)
-  (-> (ProcessBuilder. `["docker" "ps" "--filter" "label=com.metabase.mba" ])
-      (.inheritIO)
-      (.start)
-      (.waitFor)))
+  (process-async ["docker" "ps" "--filter" "label=com.metabase.mba" ]))
 
 (defmethod task :down
   [[cmd opts args]]
   (prepare-dc opts)
-  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args])
-      (.inheritIO)
-      (.start)
-      (.waitFor)))
-
-(defn- exec-into
-  [opts container & cmds]
-  ;; https://github.com/babashka/babashka/blob/master/examples/process_builder.clj
-  ;; https://github.com/babashka/babashka/issues/299
-  ;; https://book.babashka.org/#child_processes
-  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" ~container "sh" "-l" "-i" "-c" ~@cmds])
-      (.inheritIO)
-      (.start)
-      (.waitFor)))
+  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
 
 (defmethod task :up
   [[_ opts args]]
   (prepare-dc opts)
-  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d"])
-      (.inheritIO)
-      (.start)
-      (.waitFor))
+  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d"])
   (println args opts))
 
 
@@ -366,10 +359,8 @@
   ;; should add "-l" , but it makes java 15 the default java, which we
   ;; don't want because it fails to run
   (println opts)
-  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l" "-i"])
-      (.inheritIO)
-      (.start)
-      (.waitFor)))
+  (process-async
+   `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l" "-i"]))
 
 (defmethod task :dbconsole
   ;; EACH possible db container should add an env var MBA_DB_CLI that
