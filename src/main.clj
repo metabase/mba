@@ -323,46 +323,40 @@
 (defmulti task first)
 (defmethod task :default
   [[cmd opts args]]
-  (prepare-dc opts)
   (println "nop"))
 
 (defmethod task :compose
   [[cmd opts [_compose_ & args]]]
-  (prepare-dc opts)
   (process-async
    `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
 
 (defmethod task :ps
   [[cmd opts [_ps_ &  args]]]
-  (prepare-dc opts)
   (process-async `["docker" "ps" "--filter" "label=com.metabase.mba" ~@args]))
 
 (defmethod task :nuke
   [[cmd opts args]]
-  (prepare-dc opts)
   (process-async ["docker" "network" "prune" "-f"])
   (->> (sh/sh "docker" "ps" "--filter" "label=com.metabase.mba" "-qa")
-      :out
-      str/split-lines
-      (concat ["docker" "rm" "-fv"])
-      process-async)
+       :out
+       str/split-lines
+       (concat ["docker" "rm" "-fv"])
+       process-async)
   (println "💣"))
 
 (defmethod task :down
   [[cmd opts args]]
-  (prepare-dc opts)
   (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
 
 (defmethod task :up
   [[_ opts args]]
-  (prepare-dc opts)
   (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d"])
-  (println args opts))
+  (println args opts)
+  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "ps"]))
 
 
 (defmethod task :shell
   [[_ opts]]
-  (prepare-dc opts)
   ;; for now we specialcase this
   ;; because (exec-into opts "metabase" "bash" "-l" "-i") wouldn't trigger
   ;; the .profile.
@@ -379,12 +373,10 @@
   [[_ opts]]
   (let [app-db (:app-db opts)
         app-db-service (first (str/split app-db #":"))]
-    (prepare-dc opts)
     (exec-into opts app-db-service "$MBA_DB_CLI")))
 
 (defmethod task :graph
   [[_ opts]]
-  (prepare-dc opts)
   (let [opener
         (if (re-find #"Linux" (System/getProperty "os.name")) "xdg-open" "open")]
     (sh/sh  "docker" "run" "--rm" "--name" "dcv" "-v" "/tmp/:/input"
@@ -394,14 +386,12 @@
 
 (defmethod task :run
   [[_ opts [_run_ & args]]]
-  (prepare-dc opts)
   (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)
                          "exec" "metabase" "sh" "-l" "-i" "-c"  ~@args])
       (.inheritIO)
       (.start)
       (.waitFor)
-      System/exit)
-  nil)
+      System/exit))
 
 (defmethod task :help
   [summary]
@@ -513,6 +503,7 @@
       (println errors)
       (System/exit 1))
     (ensure-dirs)
+    (prepare-dc options)
     (task [(keyword (or cmd :help)) options arguments])
     nil))
 
