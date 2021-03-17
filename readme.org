@@ -25,13 +25,17 @@
   - =mba run ls=. runs one-off commands in the mb container
   - =mba logs -- -f=. show logs
   - =mba logs -- --tail=100 -f postgres=. show logs and tail of postgres container
-  - =mba ps=. show containers on this stack .
+  - =mba ps=. show all mba containers running in the system.
   - =mba down=. destroys the stack
+  - =mba compose ps=. show running containers from this stack
+  - =mba compose help=. proxy to all docker-compose commands
+  - =mba compose config=. show generated yml
+  - =mba nuke=. kill all mba containers dead
 
   mba wraps docker-compose, and all commands it does not understand
   are passed to the underlying docker-compose.
 
-  =mba config= is equivalent to =docker-compose -f tmp.yml config= and
+  =mba compose config= is equivalent to =docker-compose -f tmp.yml config= and
   will show the yml file that is generating with your current flags.
 
   By default, it will share ports. ==--publish false= will jail the
