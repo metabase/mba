@@ -325,6 +325,10 @@
   [[cmd opts args]]
   (println "nop"))
 
+(defmethod task :logs
+  [[cmd opts [_logs_ & args]]]
+  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "logs" "-f" "--tail=100" ~@args]))
+
 (defmethod task :compose
   [[cmd opts [_compose_ & args]]]
   (process-async
@@ -426,8 +430,8 @@
     (println "mba shell")
     (println "mba dbconsole")
     (println "firefox $(mba port maildev 80)")
-    (println "mba logs -- -f -t maildev")
-    (println "mba logs -- -f -t postgres")
+    (println "mba logs maildev")
+    (println "mba compose logs -- -f -t postgres")
     (println "")
     (println "Emacs config:")
     (prn '(setq cider-path-translations '(("/app/source" . "~/workspace/metabase")
