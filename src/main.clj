@@ -341,7 +341,7 @@
 
 (defmethod task :nuke
   [[cmd opts args]]
-  (process-async ["docker" "network" "prune" "-f"])
+  ;(process-async ["docker" "network" "prune" "-f"])
   (->> (sh/sh "docker" "ps" "--filter" "label=com.metabase.mba" "-qa")
        :out
        str/split-lines
