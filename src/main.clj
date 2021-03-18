@@ -272,7 +272,8 @@
           (->
            (assoc-in [:services :metabase :image] metabase)
            (update-in [:services :metabase] dissoc :command)
-           (update-in [:services :metabase] dissoc :build))
+           (update-in [:services :metabase] dissoc :build)
+           (update-in [:services :metabase] dissoc :working_dir))
 
           (#{"gh" "github"} protocol)
           (throw "NYI")
