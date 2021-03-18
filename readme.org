@@ -15,7 +15,7 @@
 
 * BugBash Instructions
   If you're bugbashing:
-  - =mba --mb dockerhub:metabase/metabase-head compose pull=. Will pull latest
+  - =mba --mb dockerhub:metabase/metabase-head pull=. Will pull latest
     metabase-head image.
   - =mba --mb dockerhub:metabase/metabase-head up=. Will
   spin metabase linked to a postgresql and maildev. Open `localhost:3000` and
@@ -27,6 +27,7 @@
 * Usage & Commands
 
   - =mba up= . creates the stack
+  - =mba pull= . pulls images from the stack. (useful if you use =*-head=)
   - =mba shell=. gives a shell inside the main metabase container
   - =mba dbconsole=. console into the app-db
   - =mba run ls=. runs one-off commands in the mb container

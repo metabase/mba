@@ -353,6 +353,10 @@
   [[cmd opts args]]
   (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
 
+(defmethod task :pull
+  [[cmd opts args]]
+  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
+
 (defmethod task :up
   [[_ opts args]]
   (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d"])
