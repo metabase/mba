@@ -278,7 +278,7 @@
           (#{"gh" "github"} protocol)
           (throw "NYI")
 
-          (#{"file"} protocol)
+          (#{"file" "dir"} protocol)
           (->
            (update-in [:services :metabase :volumes] conj
                       (str (-> metabase io/file .getCanonicalPath ) ":/app/source/"))
@@ -324,7 +324,7 @@
 (defmulti task first)
 (defmethod task :default
   [[cmd opts args]]
-  (println "nop"))
+  (println "Unknown command" cmd ". See mba --help."))
 
 (defmethod task :logs
   [[cmd opts [_logs_ & args]]]
@@ -430,7 +430,7 @@
     (println "mba up")
     (println "mba shell")
     (println "mba dbconsole")
-    (println "firefox $(mba port maildev 80)")
+    (println "firefox $(mba compose port maildev 80)")
     (println "mba logs maildev")
     (println "mba compose logs -- -f -t postgres")
     (println "")

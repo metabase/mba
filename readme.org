@@ -12,12 +12,19 @@
   - If you want it in your path: =ln -s ./mba/src/main.clj ~/bin/mba=
   - =mba --help= or =./mba/src/main.clj --help=
 
-* Usage & Commands
 
-  *FastTrack:* If you're just bugbashing =mba --mb dockerhub:metabase/metabase
-  up= will spin metabase linked to a postgresql and maildev. Open
-  `localhost:3000` and `localhost:1080`. When you're done, =mba --mb
-  dockerhub:metabase/metabase down=.
+* BugBash Instructions
+  If you're bugbashing:
+  - =mba --mb dockerhub:metabase/metabase-head compose pull=. Will pull latest
+    metabase-head image.
+  - =mba --mb dockerhub:metabase/metabase-head up=. Will
+  spin metabase linked to a postgresql and maildev. Open `localhost:3000` and
+  `localhost:1080`.
+  - When you're done, =mba --mb dockerhub:metabase/metabase down=. containers
+    and data will be wiped.
+  - Emergency hatch: =mba nuke= will kill everything mba related.
+
+* Usage & Commands
 
   - =mba up= . creates the stack
   - =mba shell=. gives a shell inside the main metabase container
