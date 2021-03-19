@@ -31,11 +31,11 @@
   - =mba dbconsole=. console into the app-db
   - =mba run ls=. runs one-off commands in the mb container
   - =mba logs=. show logs
-  - =mba logs -- --tail=100 -f=. show logs
+  - =mba compose logs -- --tail=100 -f=. same, using raw compose command
   - =mba logs postgres=. show logs and tail of postgres container
-  - =mba compose logs -- --tail=100 -f postgres=. show logs and tail of postgres container
-  - =mba ps=. show all mba containers running in the system.
+  - =mba compose logs -- --tail=100 -f postgres=. same, using raw compose command
   - =mba down=. destroys the stack
+  - =mba ps=. show all mba containers running in the system.
   - =mba compose ps=. show running containers from this stack
   - =mba compose ...=. proxy to all docker-compose commands
   - =mba compose config=. show generated yml
