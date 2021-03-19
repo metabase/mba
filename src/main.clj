@@ -396,7 +396,7 @@
 (defmethod task :run
   [[_ opts [_run_ & args]]]
   (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)
-                         "exec" "metabase" "sh" "-l" "-i" "-c"  ~@args])
+                         "exec" "metabase" "sh" "-l" "-i" "-c" ~(str/join " " args)])
       (.inheritIO)
       (.start)
       (.waitFor)
