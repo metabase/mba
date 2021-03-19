@@ -17,9 +17,8 @@
   If you're bugbashing:
   - =mba --mb dockerhub:metabase/metabase-head pull=. Will pull latest
     metabase-head image.
-  - =mba --mb dockerhub:metabase/metabase-head up=. Will
-  spin metabase linked to a postgresql and maildev. Open `localhost:3000` and
-  `localhost:1080`.
+  - =mba --mb dockerhub:metabase/metabase-head up=. Will spin metabase linked to
+    a postgresql and maildev. Open `localhost:3000` and `localhost:1080`.
   - When you're done, =mba --mb dockerhub:metabase/metabase down=. containers
     and data will be wiped.
   - Emergency hatch: =mba nuke= will kill everything mba related.
@@ -31,12 +30,14 @@
   - =mba shell=. gives a shell inside the main metabase container
   - =mba dbconsole=. console into the app-db
   - =mba run ls=. runs one-off commands in the mb container
-  - =mba logs -- -f=. show logs
-  - =mba logs -- --tail=100 -f postgres=. show logs and tail of postgres container
+  - =mba logs=. show logs
+  - =mba logs -- --tail=100 -f=. show logs
+  - =mba logs postgres=. show logs and tail of postgres container
+  - =mba compose logs -- --tail=100 -f postgres=. show logs and tail of postgres container
   - =mba ps=. show all mba containers running in the system.
   - =mba down=. destroys the stack
   - =mba compose ps=. show running containers from this stack
-  - =mba compose help=. proxy to all docker-compose commands
+  - =mba compose ...=. proxy to all docker-compose commands
   - =mba compose config=. show generated yml
   - =mba nuke=. kill all mba containers dead
 
@@ -78,7 +79,7 @@
 
   - to pass flags to docker-compose , or any command underlying mba,
     the way to pass as a parameter to inside is with =--=: =mba
-    --app-db postgres logs -- -f=
+    --app-db postgres compose logs -- -f=
 
 * Flags
   **tl;dr**:
@@ -95,9 +96,9 @@
 ** --mb / -M
    Main metabase app source or image.
 
-   If mba runs in a metabase source directory, it will default to the
-   current directory. Else, it defaults to dockerhub:metabase/metabase
-   docker image.
+   If mba runs in a metabase source directory, it will default to the current
+   directory. Else, it defaults to dockerhub:metabase/metabase-enterprise docker
+   image.
 
    Set it explicitly like the following:
 
@@ -131,7 +132,7 @@
    - sqlserver
 
 ** --proxy
-   Proxy infrastructure. Defaults to nil. Valid options are:
+    Proxy infrastructure. Defaults to nil. Valid options are:
 
    - nginx
    - haproxy
