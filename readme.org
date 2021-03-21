@@ -19,7 +19,7 @@
     metabase-head image.
   - =mba --mb dockerhub:metabase/metabase-head up=. Will spin metabase linked to
     a postgresql and maildev. Open `localhost:3000` and `localhost:1080`.
-  - When you're done, =mba --mb dockerhub:metabase/metabase down=. containers
+  - When you're done, =mba --mb dockerhub:metabase/metabase-head down=. containers
     and data will be wiped.
   - Emergency hatch: =mba nuke= will kill everything mba related.
 
@@ -41,8 +41,8 @@
   - =mba compose config=. show generated yml
   - =mba nuke=. kill all mba containers dead
 
-  mba wraps docker-compose, and all commands it does not understand
-  are passed to the underlying docker-compose.
+  mba wraps docker-compose, and using the command =compose=, it will pass all
+  further commands to the underlying docker-compose.
 
   =mba compose config= is equivalent to =docker-compose -f tmp.yml config= and
   will show the yml file that is generating with your current flags.
@@ -122,21 +122,21 @@
 ** --data-db / -D
    Datawarehouse db. Defaults to nil. Valid options are:
 
-   - postgresql
-   - mariadb
-   - mysql
-   - mongodb
-   - vertica
-   - presto
-   - sparksql
-   - sqlserver
+   - =postgresql=
+   - =mariadb=
+   - =mysql=
+   - =mongodb=
+   - =vertica=
+   - =presto=
+   - =sparksql=
+   - =sqlserver=
 
 ** --proxy
     Proxy infrastructure. Defaults to nil. Valid options are:
 
-   - nginx
-   - haproxy
-   - envoy
+   - =nginx=
+   - =haproxy=
+   - =envoy=
 
 ** --env / -e
    Injects env variables to the metabase container. Can be present
@@ -157,12 +157,13 @@
    Publish ports. Boolean. Defaults to true.
 
 ** --prefix / -p
-   stack name. Defaults to "mba". Useful when running multiple
+   stack name. Defaults to "mba-[somehash]". Useful when running multiple
    instances.
 
 ** --network / -n
    Network name. By default it creates an anonymous network per stack,
    Fixing it is useful to make many metabase join the same network.
+
 * ports
   By default, the stack will share ports:
   - 3000: backend
@@ -196,18 +197,8 @@
    =pull= command: =mba --mb docker:metabase/metabase pull=
 
 * modifications done (or to be done) to make it work as a dev env
-** node
-  Change the webpack command to --host 0.0.0.0
-
-  #+begin_src bash
-    "build-watch": "yarn && webpack --watch",
-    - "build-hot": "yarn && NODE_ENV=hot webpack-dev-server --progress",
-    + "build-hot": "yarn && NODE_ENV=hot webpack-dev-server --progress --host 0.0.0.0",
-    "build-stats": "yarn && webpack --json > stats.json",
-  #+end_src
-
 ** clojure
-   Add :port and :host.
+Add :port and :host.
 
   #+begin_src bash
   lein repl :headless :host 0.0.0.0 :port 7888
@@ -216,7 +207,7 @@
 ** How to see actual Metabase queries sent to the database
 
   #+begin_src bash
-   ./src/main.clj --app-db postgres --data-db postgres logs -- --tail=100 -f postgres | grep -A 5 "queryHash"
+   ./src/main.clj --app-db postgres --data-db postgres logs postgres | grep -A 5 "queryHash"
   #+end_src
 
 ** cypress
@@ -224,7 +215,7 @@
 
 ** how to see what is the actual compose being built
   #+begin_src bash
-   ./src/main.clj --data-db postgres --app-db postgres config | less
+   ./src/main.clj --data-db postgres --app-db postgres compose config | less
   #+end_src
 
 * See also
