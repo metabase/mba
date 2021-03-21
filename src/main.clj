@@ -24,6 +24,20 @@
       fs/parent
       (str "/resources")))
 
+(def extras {:embedding
+             {:image "node"
+              :volumes
+              [(str resources "/stacks/embedding/:/app/")]
+              :environment
+              {:MB_SITE_URL "http://metabase:3000"}
+              :command "bash -c 'yarn install && node index.js'"
+              :working_dir "/app"
+              :ports ["3001:3001"]
+              :networks ["mbanet"]
+              :depends_on ["metabase"]
+              }
+             })
+
 ;; * data
 (def reverse-proxies {:haproxy
                       {:image "haproxy:2.3.4-alpine"
@@ -194,6 +208,7 @@
                         :MB_EMAIL_SMTP_HOST "maildev"
                         :MB_EMAIL_SMTP_PORT "25"
                         :MB_ENABLE_TEST_ENDPOINTS "true"
+                        :MB_ENABLE_EMBEDDING "true"
                         :MBA_CLI "lein update-in :dependencies conj \\[nrepl/nrepl\\ \\\"0.8.3\\\"\\] -- update-in :plugins conj \\[refactor-nrepl\\ \\\"2.5.1\\\"\\] -- update-in :plugins conj \\[cider/cider-nrepl\\ \\\"0.25.8\\\"\\] -- repl-ee :headless :host 0.0.0.0  :port 7888"
                         :MBA_YARN_BUILD "yarn && NODE_ENV=hot yarn webpack-dev-server --progress --host 0.0.0.0"
                         :LEIN_REPL_PORT 7888
@@ -252,6 +267,7 @@
         publish             (:publish opts)
         prefix              (:prefix opts)
         env                 (:env opts)
+        extra               (:extra opts)
         [protocol metabase] (:mb opts)
         metabase            (str/replace metabase #"~/" (str (System/getProperty "user.home") "/"))]
 
@@ -301,7 +317,12 @@
           (inject-envs env)
 
           prefix ;; always will have something
-          (assoc-in [:services :metabase :environment :MBA_PREFIX] prefix))
+          (assoc-in [:services :metabase :environment :MBA_PREFIX] prefix)
+
+          (seq extra)
+          (assoc-in [:services (first extra)] ((keyword (first extra)) extras))
+
+          )
 
         docker-compose-yml
         docker-compose-yml-file!)))
@@ -478,14 +499,19 @@
     :default nil
     :parse-fn (comp keyword str/lower-case)
     :validate [#{:nginx :envoy :haproxy}]]
-   ["-d" "--app-db APP-DB"
+   ["-d" "--app-db APP-DB" "Application db"
     :default "postgres"
     :parse-fn str/lower-case
     :validate [#(#{:h2 :postgres :postgresql :mysql :mariadb} (keyword (re-find #"^[^:]*" %)))]]
-   ["-D" "--data-db DATA-DB"
+   ["-D" "--data-db DATA-DB" "Data warehouse db"
     :default nil
     :parse-fn (comp keyword str/lower-case)
-    :validate [#{:postgres :postgresql :mysql :mongodb :mariadb :vertica :sparksql :sqlserver :presto}]]])
+    :validate [#{:postgres :postgresql :mysql :mongodb :mariadb :vertica :sparksql :sqlserver :presto}]]
+   ["-E" "--extra EXTRA" "extras... anything goes"
+    :default []
+    :multi true
+    :update-fn conj]
+   ])
 
 (defn copy-file [source-path dest-path]
   (io/copy (io/file source-path) (io/file dest-path)))
