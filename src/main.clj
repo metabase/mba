@@ -119,7 +119,7 @@
                  :labels {"com.metabase.mba" true}}
 
                 :postgres
-                {:image "postgres:12"
+                {:image "postgres:13-alpine"
                  :user "root"
                  :volumes [(str mba-home ":/root/")
                            (str resources "/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/")]
