@@ -138,6 +138,14 @@
                  :networks ["mbanet"]
                  :labels {"com.metabase.mba" true}}
 
+                :postgres-data
+                {:image "metabase/qa-databases:postgres-sample-12"
+                 :restart "on-failure"
+                 :stdin_open true
+                 :tty true
+                 :networks ["mbanet"]
+                 :labels {"com.metabase.mba" true}}
+
                 :mysql
                 {:image "circleci/mysql:5.7.23"
                  :environment
@@ -292,6 +300,8 @@
           publish
           (->
            (assoc-in [:services :metabase :ports] ["3000:3000" "8080:8080" "7888:7888"])
+           (assoc-in [:services :postgres-data :ports] ["5433:5432"])
+           (assoc-in [:services :postgres :ports] ["5432:5432"])
            (assoc-in [:services :maildev :ports] ["1080:80", "1025:25"]))
 
           (and publish proxy)
@@ -485,7 +495,7 @@
    ["-D" "--data-db DATA-DB"
     :default nil
     :parse-fn (comp keyword str/lower-case)
-    :validate [#{:postgres :postgresql :mysql :mongodb :mariadb :vertica :sparksql :sqlserver :presto}]]])
+    :validate [#{:postgres :postgres-data :mysql :mongodb :mariadb :vertica :sparksql :sqlserver :presto}]]])
 
 (defn copy-file [source-path dest-path]
   (io/copy (io/file source-path) (io/file dest-path)))
