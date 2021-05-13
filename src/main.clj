@@ -317,6 +317,8 @@
           (->
            (assoc-in [:services :metabase :ports] ["3000:3000" "8080:8080" "7888:7888"])
            (assoc-in [:services :postgres-data :ports] ["5433:5432"])
+           (assoc-in [:services :mysql57-data :ports] ["3307:3306"])
+           (assoc-in [:services :mysql8-data :ports] ["3308:3306"])
            (assoc-in [:services :postgres :ports] ["5432:5432"])
            (assoc-in [:services :maildev :ports] ["1080:80", "1025:25"]))
 
@@ -511,7 +513,7 @@
    ["-D" "--data-db DATA-DB"
     :default nil
     :parse-fn (comp keyword str/lower-case)
-    :validate [#{:postgres :postgres-data :mysql :mongodb :mariadb :vertica :sparksql :sqlserver :presto}]]])
+    :validate [#{:postgres :postgres-data :mysql :mongodb :mariadb :vertica :sparksql :sqlserver :presto :mysql57-data :mysql8-data}]]])
 
 (defn copy-file [source-path dest-path]
   (io/copy (io/file source-path) (io/file dest-path)))
