@@ -146,6 +146,22 @@
                  :networks ["mbanet"]
                  :labels {"com.metabase.mba" true}}
 
+                :mysql57-data
+                {:image "metabase/qa-databases:mysql-sample-5.7"
+                 :restart "on-failure"
+                 :stdin_open true
+                 :tty true
+                 :networks ["mbanet"]
+                 :labels {"com.metabase.mba" true}}
+                
+                :mysql8-data
+                {:image "metabase/qa-databases:mysql-sample-8"
+                 :restart "on-failure"
+                 :stdin_open true
+                 :tty true
+                 :networks ["mbanet"]
+                 :labels {"com.metabase.mba" true}}
+
                 :mysql
                 {:image "circleci/mysql:5.7.23"
                  :environment
