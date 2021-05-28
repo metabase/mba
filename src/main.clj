@@ -271,7 +271,7 @@
 
           ;; network
           (:network opts)
-          (assoc-in [:networks :d] {:name (:network opts)})
+          (assoc-in [:networks :mbanet] {:name (:network opts)})
 
           ;; dev / release
           ;; (not (.exists (io/file (str (System/getProperty "user.dir") "/app.json"))))
