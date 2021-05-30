@@ -120,6 +120,7 @@
 
                 :postgres
                 {:image "postgres:13-alpine"
+                 :ports ["5432"]
                  :user "root"
                  :volumes [(str mba-home ":/root/")
                            (str resources "/postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/")]
@@ -140,6 +141,7 @@
 
                 :postgres-data
                 {:image "metabase/qa-databases:postgres-sample-12"
+                 :ports ["5432"]
                  :restart "on-failure"
                  :stdin_open true
                  :tty true
@@ -300,8 +302,6 @@
           publish
           (->
            (assoc-in [:services :metabase :ports] ["3000:3000" "8080:8080" "7888:7888"])
-           (assoc-in [:services :postgres-data :ports] ["5433:5432"])
-           (assoc-in [:services :postgres :ports] ["5432:5432"])
            (assoc-in [:services :maildev :ports] ["1080:80", "1025:25"]))
 
           (and publish proxy)
