@@ -286,7 +286,7 @@
            (update-in [:services :metabase] dissoc :working_dir))
 
           (#{"gh" "github"} protocol)
-          (throw "NYI")
+          (println "No way Jose")
 
           (#{"file" "dir"} protocol)
           (->
