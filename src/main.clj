@@ -144,7 +144,7 @@
                  :ports ["5432"]
                  :restart "on-failure"
                  :stdin_open true
-                 :tty true
+                 :tty false
                  :networks ["mbanet"]
                  :labels {"com.metabase.mba" true}}
 
@@ -209,7 +209,7 @@
                         :LEIN_REPL_PORT 7888
                         :LEIN_REPL_HOST "0.0.0.0"
                         }
-                       :tty "True"
+                       :tty "False"
                        :stdin_open "True"
                        :restart "on-failure"
                        :command "tail -f /dev/null"
