@@ -191,7 +191,7 @@
                                  ;; default one, and mb doesn't start
                                  ;; then.
                                  ;; (str resources "/base/profile.sh:/etc/profile.d/99-profile.sh")
-                                 (str resources "/base/profile.sh:/etc/profile.d/00-restore-env.sh")]
+                                 (str resources "/base/etc/profile.d/:/etc/profile.d")]
                        :environment
                        {:ENABLE_ENTERPRISE_EDITION "true"
                         :HAS_ENTERPRISE_TOKEN "true"
