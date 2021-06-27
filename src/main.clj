@@ -328,7 +328,11 @@
   ;; https://github.com/babashka/babashka/blob/master/examples/process_builder.clj
   ;; https://github.com/babashka/babashka/issues/299
   ;; https://book.babashka.org/#child_processes
-  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" ~container "sh" "-l" "-i" "-c" ~@cmds]))
+  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec"
+                   ~@(when-not (System/console) ["-T"])
+                   ~container "sh" "-l"
+                   ~@(when (System/console) ["-i"])
+                   "-c" ~@cmds]))
 
 ;;; * Tasks
 (defmulti task first)
@@ -406,7 +410,7 @@
 (defmethod task :run
   [[_ opts [_run_ & args]]]
   (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)
-                         "exec" "metabase" "sh" "-l" "-i" "-c" ~(str/join " " args)])
+                         "exec" ~@(when-not (System/console) ["-T"]) "metabase" "sh" "-l" ~@(when (System/console) ["-i"]) "-c" ~(str/join " " args)])
       (.inheritIO)
       (.start)
       (.waitFor)
