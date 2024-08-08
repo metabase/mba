@@ -225,13 +225,13 @@
    :mariadb "jdbc:mysql://mariadb:3306/metabase_test?user=root"
    :mysql "jdbc:mysql://mysql:3306/circle_test?user=root"})
 
-;; * docker compose
+;; * docker-compose
 
 (def my-temp-file (fs/delete-on-exit
                    (java.io.File/createTempFile "docker compose-d-" ".yml")))
 
 (defn docker-compose-yml [docker-compose]
-  (yaml/generate-string docker compose :dumper-options {:flow-style :block}))
+  (yaml/generate-string docker-compose :dumper-options {:flow-style :block}))
 
 (defn docker-compose-yml-file! [docker-compose-yml]
   (spit my-temp-file docker-compose-yml))
@@ -253,7 +253,7 @@
               (update-in acc [:services :metabase :environment]
                          conj
                          (vector (keyword (str mvar)) (str mval)))))
-          docker compose envs))
+          docker-compose envs))
 
 (defn- prepare-dc [opts]
   (let [app-db              (:app-db opts)
