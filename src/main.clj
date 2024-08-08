@@ -234,7 +234,7 @@
   (yaml/generate-string docker compose :dumper-options {:flow-style :block}))
 
 (defn docker-compose-yml-file! [docker-compose-yml]
-  (spit my-temp-file docker compose-yml))
+  (spit my-temp-file docker-compose-yml))
 
 (defn- assemble-app-db
   [config app-db]
@@ -313,8 +313,8 @@
           prefix ;; always will have something
           (assoc-in [:services :metabase :environment :MBA_PREFIX] prefix))
 
-        docker compose-yml
-        docker compose-yml-file!)))
+        docker-compose-yml
+        docker-compose-yml-file!)))
 
 (defn- process-async
   [cmd]
