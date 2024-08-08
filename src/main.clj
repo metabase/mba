@@ -265,7 +265,7 @@
         [protocol metabase] (:mb opts)
         metabase            (str/replace metabase #"~/" (str (System/getProperty "user.home") "/"))]
 
-    (-> (cond-> (assemble-app-db docker compose app-db)
+    (-> (cond-> (assemble-app-db docker-compose app-db)
 
           ;; data-db
           (:data-db opts)
