@@ -171,7 +171,7 @@
                  :environment
                  {:MBA_DB_CLI "bash"}}})
 
-(def docker compose {:version "3.5"
+(def docker-compose {:version "3.5"
                      :networks {:mbanet {} :mbanet2 {}}
                      :volumes { :h2vol {}}
                      :services
