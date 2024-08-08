@@ -403,9 +403,9 @@
   (let [opener
         (if (re-find #"Linux" (System/getProperty "os.name")) "xdg-open" "open")]
     (sh/sh  "docker" "run" "--rm" "--name" "dcv" "-v" "/tmp/:/input"
-            "pmsipilot/docker compose-viz" "render" "-m" "image"
+            "pmsipilot/docker-compose-viz" "render" "-m" "image"
             (str/replace (.getPath my-temp-file) "/tmp/" "") "--force")
-    (sh/sh opener "/tmp/docker compose.png")))
+    (sh/sh opener "/tmp/docker-compose.png")))
 
 (defmethod task :run
   [[_ opts [_run_ & args]]]
