@@ -230,10 +230,10 @@
 (def my-temp-file (fs/delete-on-exit
                    (java.io.File/createTempFile "docker compose-d-" ".yml")))
 
-(defn docker compose-yml [docker compose]
+(defn docker-compose-yml [docker compose]
   (yaml/generate-string docker compose :dumper-options {:flow-style :block}))
 
-(defn docker compose-yml-file! [docker compose-yml]
+(defn docker-compose-yml-file! [docker compose-yml]
   (spit my-temp-file docker compose-yml))
 
 (defn- assemble-app-db
