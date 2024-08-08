@@ -328,7 +328,7 @@
   ;; https://github.com/babashka/babashka/blob/master/examples/process_builder.clj
   ;; https://github.com/babashka/babashka/issues/299
   ;; https://book.babashka.org/#child_processes
-  (process-async `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec"
+  (process-async `["docker" "compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec"
                    ~@(when-not (System/console) ["-T"])
                    ~container "sh" "-l"
                    ~@(when (System/console) ["-i"])
@@ -342,12 +342,12 @@
 
 (defmethod task :logs
   [[cmd opts [_logs_ & args]]]
-  (process-async `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "logs" "-f" "--tail=100" ~@args]))
+  (process-async `["docker" "compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "logs" "-f" "--tail=100" ~@args]))
 
 (defmethod task :compose
   [[cmd opts [_compose_ & args]]]
   (process-async
-   `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
+   `["docker" "compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
 
 (defmethod task :ps
   [[cmd opts [_ps_ &  args]]]
@@ -365,17 +365,17 @@
 
 (defmethod task :down
   [[cmd opts args]]
-  (process-async `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
+  (process-async `["docker" "compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
 
 (defmethod task :pull
   [[cmd opts args]]
-  (process-async `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
+  (process-async `["docker" "compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
 
 (defmethod task :up
   [[_ opts args]]
-  (process-async `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d"])
+  (process-async `["docker" "compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d"])
   (println args opts)
-  (process-async `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "ps"]))
+  (process-async `["docker" "compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "ps"]))
 
 
 (defmethod task :shell
@@ -388,7 +388,7 @@
   ;; don't want because it fails to run
   (println opts)
   (process-async
-   `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l" "-i"]))
+   `["docker" "compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l" "-i"]))
 
 (defmethod task :dbconsole
   ;; EACH possible db container should add an env var MBA_DB_CLI that
@@ -409,7 +409,7 @@
 
 (defmethod task :run
   [[_ opts [_run_ & args]]]
-  (-> (ProcessBuilder. `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)
+  (-> (ProcessBuilder. `["docker" "compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)
                          "exec" ~@(when-not (System/console) ["-T"]) "metabase" "sh" "-l" ~@(when (System/console) ["-i"]) "-c" ~(str/join " " args)])
       (.inheritIO)
       (.start)
@@ -482,7 +482,7 @@
    ;;             ;;    (remove #{(second (re-find #"^(\d+):\d+$" x))} acc)
    ;;             ;;    x))
    ;;  ]
-   ["-p" "--prefix PREFIX" "Prefix of docker compose run" :default nil]
+   ["-p" "--prefix PREFIX" "Prefix of docker" "compose run" :default nil]
    ["-n" "--network NETWORK" "network name" :default nil]
    ["-e" "--env ENV" "environment vars to pass along"
     :default []
