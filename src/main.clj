@@ -482,7 +482,7 @@
    ;;             ;;    (remove #{(second (re-find #"^(\d+):\d+$" x))} acc)
    ;;             ;;    x))
    ;;  ]
-   ["-p" "--prefix PREFIX" "Prefix of docker" "compose run" :default nil]
+   ["-p" "--prefix PREFIX" "Prefix of docker compose run" :default nil]
    ["-n" "--network NETWORK" "network name" :default nil]
    ["-e" "--env ENV" "environment vars to pass along"
     :default []
