@@ -228,7 +228,7 @@
 ;; * docker-compose
 
 (def my-temp-file (fs/delete-on-exit
-                   (java.io.File/createTempFile "docker compose-d-" ".yml")))
+                   (java.io.File/createTempFile "docker-compose-d-" ".yml")))
 
 (defn docker-compose-yml [docker-compose]
   (yaml/generate-string docker-compose :dumper-options {:flow-style :block}))
