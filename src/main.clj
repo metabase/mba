@@ -171,7 +171,7 @@
                  :environment
                  {:MBA_DB_CLI "bash"}}})
 
-(def docker-compose {:version "3.5"
+(def docker compose {:version "3.5"
                      :networks {:mbanet {} :mbanet2 {}}
                      :volumes { :h2vol {}}
                      :services
@@ -225,16 +225,16 @@
    :mariadb "jdbc:mysql://mariadb:3306/metabase_test?user=root"
    :mysql "jdbc:mysql://mysql:3306/circle_test?user=root"})
 
-;; * docker-compose
+;; * docker compose
 
 (def my-temp-file (fs/delete-on-exit
-                   (java.io.File/createTempFile "docker-compose-d-" ".yml")))
+                   (java.io.File/createTempFile "docker compose-d-" ".yml")))
 
-(defn docker-compose-yml [docker-compose]
-  (yaml/generate-string docker-compose :dumper-options {:flow-style :block}))
+(defn docker compose-yml [docker compose]
+  (yaml/generate-string docker compose :dumper-options {:flow-style :block}))
 
-(defn docker-compose-yml-file! [docker-compose-yml]
-  (spit my-temp-file docker-compose-yml))
+(defn docker compose-yml-file! [docker compose-yml]
+  (spit my-temp-file docker compose-yml))
 
 (defn- assemble-app-db
   [config app-db]
@@ -247,13 +247,13 @@
         (cond-> version (update-in [:services kw-name :image]
                                    #(str/replace % #":[^:]*$" (str ":" version)))))))
 
-(defn- inject-envs [docker-compose envs]
+(defn- inject-envs [docker compose envs]
   (reduce (fn [acc x]
             (let [[mvar mval] (str/split x #"=")]
               (update-in acc [:services :metabase :environment]
                          conj
                          (vector (keyword (str mvar)) (str mval)))))
-          docker-compose envs))
+          docker compose envs))
 
 (defn- prepare-dc [opts]
   (let [app-db              (:app-db opts)
@@ -265,7 +265,7 @@
         [protocol metabase] (:mb opts)
         metabase            (str/replace metabase #"~/" (str (System/getProperty "user.home") "/"))]
 
-    (-> (cond-> (assemble-app-db docker-compose app-db)
+    (-> (cond-> (assemble-app-db docker compose app-db)
 
           ;; data-db
           (:data-db opts)
@@ -313,8 +313,8 @@
           prefix ;; always will have something
           (assoc-in [:services :metabase :environment :MBA_PREFIX] prefix))
 
-        docker-compose-yml
-        docker-compose-yml-file!)))
+        docker compose-yml
+        docker compose-yml-file!)))
 
 (defn- process-async
   [cmd]
@@ -328,7 +328,7 @@
   ;; https://github.com/babashka/babashka/blob/master/examples/process_builder.clj
   ;; https://github.com/babashka/babashka/issues/299
   ;; https://book.babashka.org/#child_processes
-  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec"
+  (process-async `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec"
                    ~@(when-not (System/console) ["-T"])
                    ~container "sh" "-l"
                    ~@(when (System/console) ["-i"])
@@ -342,12 +342,12 @@
 
 (defmethod task :logs
   [[cmd opts [_logs_ & args]]]
-  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "logs" "-f" "--tail=100" ~@args]))
+  (process-async `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "logs" "-f" "--tail=100" ~@args]))
 
 (defmethod task :compose
   [[cmd opts [_compose_ & args]]]
   (process-async
-   `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
+   `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
 
 (defmethod task :ps
   [[cmd opts [_ps_ &  args]]]
@@ -365,17 +365,17 @@
 
 (defmethod task :down
   [[cmd opts args]]
-  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
+  (process-async `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
 
 (defmethod task :pull
   [[cmd opts args]]
-  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
+  (process-async `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) ~@args]))
 
 (defmethod task :up
   [[_ opts args]]
-  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d"])
+  (process-async `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "up" "-d"])
   (println args opts)
-  (process-async `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "ps"]))
+  (process-async `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)  "ps"]))
 
 
 (defmethod task :shell
@@ -388,7 +388,7 @@
   ;; don't want because it fails to run
   (println opts)
   (process-async
-   `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l" "-i"]))
+   `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file) "exec" "metabase" "bash" "-l" "-i"]))
 
 (defmethod task :dbconsole
   ;; EACH possible db container should add an env var MBA_DB_CLI that
@@ -403,13 +403,13 @@
   (let [opener
         (if (re-find #"Linux" (System/getProperty "os.name")) "xdg-open" "open")]
     (sh/sh  "docker" "run" "--rm" "--name" "dcv" "-v" "/tmp/:/input"
-            "pmsipilot/docker-compose-viz" "render" "-m" "image"
+            "pmsipilot/docker compose-viz" "render" "-m" "image"
             (str/replace (.getPath my-temp-file) "/tmp/" "") "--force")
-    (sh/sh opener "/tmp/docker-compose.png")))
+    (sh/sh opener "/tmp/docker compose.png")))
 
 (defmethod task :run
   [[_ opts [_run_ & args]]]
-  (-> (ProcessBuilder. `["docker-compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)
+  (-> (ProcessBuilder. `["docker compose" "-p" ~(:prefix opts) "-f" ~(.getPath my-temp-file)
                          "exec" ~@(when-not (System/console) ["-T"]) "metabase" "sh" "-l" ~@(when (System/console) ["-i"]) "-c" ~(str/join " " args)])
       (.inheritIO)
       (.start)
@@ -482,7 +482,7 @@
    ;;             ;;    (remove #{(second (re-find #"^(\d+):\d+$" x))} acc)
    ;;             ;;    x))
    ;;  ]
-   ["-p" "--prefix PREFIX" "Prefix of docker-compose run" :default nil]
+   ["-p" "--prefix PREFIX" "Prefix of docker compose run" :default nil]
    ["-n" "--network NETWORK" "network name" :default nil]
    ["-e" "--env ENV" "environment vars to pass along"
     :default []
