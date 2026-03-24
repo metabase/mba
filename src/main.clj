@@ -119,7 +119,7 @@
                  :labels {"com.metabase.mba" true}}
 
                 :postgres
-                {:image "postgres:latest"
+                {:image "postgres:18-alpine"
                  :ports ["5432"]
                  :user "root"
                  :volumes [(str mba-home ":/root/")
